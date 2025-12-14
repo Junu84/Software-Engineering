@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Little Wins – Home</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+
+</head>
+<body>
+  <h1>Little Wins – Home</h1>
+
+  <p id="welcome-text"></p>
+
+  <h2>Start a Little Wins Session</h2>
+
+  <div>
+    <label for="mode-select">Mode:</label>
+    <select id="mode-select">
+      <option value="MOOD_BOOSTER">Mood Booster</option>
+      <option value="BRAIN_BOOSTER">Brain Booster</option>
+      <option value="RELAX_RESET">Relax & Reset</option>
+      <option value="KINDNESS_CONNECTION">Kindness & Connection</option>
+    </select>
+  </div>
+
+  <div>
+    <label for="duration-select">Duration (minutes):</label>
+    <select id="duration-select">
+      <option value="3">3</option>
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="15">15</option>
+    </select>
+  </div>
+
+  <button id="start-session-btn">Start Session</button>
+
+  <hr />
+
+  <button id="logout-btn">Logout</button>
+
+  <script>
+    const backendBaseUrl = 'http://localhost:3000';
+
+    // Prüfen, ob der Benutzer eingeloggt ist
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username');
+
+    if (!userId) {
+      // Nicht eingeloggt → zurück zur Login-Seite
+      window.location.href = 'index.html';
+    } else {
+      const welcome = document.getElementById('welcome-text');
+      welcome.textContent = `Welcome back, ${username || 'Little Wins user'}!`;
+    }
+
+    // Logout
+    const logoutBtn = document.getElementById('logout-btn');
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('userId');
+      localStorage.removeItem('username');
+      localStorage.removeItem('currentSessionId');
+      window.location.href = 'index.html';
+    });
+
+    // Session starten
+    const startBtn = document.getElementById('start-session-btn');
+    startBtn.addEventListener('click', async () => {
+      const mode = document.getElementById('mode-select').value;
+      const durationMinutes = document.getElementById('duration-select').value;
+
+      try {
+        const response = await fetch(`${backendBaseUrl}/api/sessions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            mode,
+            durationMinutes
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          alert(data.error || 'Could not start session.');
+          return;
+        }
+
+        // Session-ID und Infos merken
+        localStorage.setItem('currentSessionId', data.id);
+        localStorage.setItem('currentMode', data.mode);
+        localStorage.setItem('currentDuration', data.durationMinutes);
+
+        // Weiter zur Activity-Seite (M4 kommt später)
+        window.location.href = 'activity.html';
+      } catch (err) {
+        console.error(err);
+        alert('Error connecting to backend.');
+      }
+    });
+  </script>
+</body>
+
+</html>

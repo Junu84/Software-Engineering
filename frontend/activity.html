@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Little Wins – Activity</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+
+</head>
+<body>
+  <h1>Your Little Wins Activity</h1>
+
+  <p id="session-info"></p>
+
+  <!-- Hier kommt später die echte Activity-Anzeige (M4) hin -->
+
+  <button id="back-home-btn">Back to Home</button>
+
+  <script>
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      window.location.href = 'index.html';
+    }
+
+    const mode = localStorage.getItem('currentMode');
+    const duration = localStorage.getItem('currentDuration');
+    const sessionId = localStorage.getItem('currentSessionId');
+
+    const info = document.getElementById('session-info');
+    info.textContent = `Session #${sessionId}: Mode = ${mode}, Duration = ${duration} minutes. (Activity display will follow in the next step.)`;
+
+    const backBtn = document.getElementById('back-home-btn');
+    backBtn.addEventListener('click', () => {
+      window.location.href = 'home.html';
+    });
+  </script>
+</body>
+</html>
