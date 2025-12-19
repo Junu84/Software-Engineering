@@ -1,106 +1,111 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Little Wins – Home</title>
+  <meta charset="utf-8" />
+  <title>Little Wins — Home</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
-
+  <script src="/frontend/config.js"></script>
 </head>
 <body>
-  <h1>Little Wins – Home</h1>
+  <main class="card">
+    <h1>Little Wins — Home</h1>
+    <p id="welcome-text"></p>
 
-  <p id="welcome-text"></p>
+    <h2>Start a Little Wins Session</h2>
 
-  <h2>Start a Little Wins Session</h2>
+    <div>
+      <label for="mode-select">Mode:</label>
+      <select id="mode-select">
+        <option value="Mood Booster">Mood Booster</option>
+        <option value="Brain Booster">Brain Booster</option>
+        <option value="Relax & Reset">Relax & Reset</option>
+        <option value="Kindness & Connection">Kindness & Connection</option>
+      </select>
+    </div>
 
-  <div>
-    <label for="mode-select">Mode:</label>
-    <select id="mode-select">
-      <option value="MOOD_BOOSTER">Mood Booster</option>
-      <option value="BRAIN_BOOSTER">Brain Booster</option>
-      <option value="RELAX_RESET">Relax & Reset</option>
-      <option value="KINDNESS_CONNECTION">Kindness & Connection</option>
-    </select>
-  </div>
+    <div>
+      <label for="duration-select">Duration (minutes):</label>
+      <select id="duration-select">
+        <option value="3">3</option>
+        <option value="5" selected>5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+      </select>
+    </div>
 
-  <div>
-    <label for="duration-select">Duration (minutes):</label>
-    <select id="duration-select">
-      <option value="3">3</option>
-      <option value="5">5</option>
-      <option value="10">10</option>
-      <option value="15">15</option>
-    </select>
-  </div>
-
-  <button id="start-session-btn">Start Session</button>
-
-  <hr />
-
-  <button id="logout-btn">Logout</button>
+    <button id="start-session-btn">Start Session</button>
+    <hr />
+    <button id="logout-btn">Logout</button>
+  </main>
 
   <script>
-    const backendBaseUrl = 'http://localhost:3000';
+    const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';;
+    const token = localStorage.getItem('lw_token');
 
-    // Prüfen, ob der Benutzer eingeloggt ist
-    const userId = localStorage.getItem('userId');
-    const username = localStorage.getItem('username');
-
-    if (!userId) {
-      // Nicht eingeloggt → zurück zur Login-Seite
+    if (!token) {
       window.location.href = 'index.html';
-    } else {
-      const welcome = document.getElementById('welcome-text');
-      welcome.textContent = `Welcome back, ${username || 'Little Wins user'}!`;
     }
 
-    // Logout
-    const logoutBtn = document.getElementById('logout-btn');
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('userId');
-      localStorage.removeItem('username');
-      localStorage.removeItem('currentSessionId');
+    async function api(path, opts = {}) {
+      const headers = opts.headers || {};
+      headers['Content-Type'] = 'application/json';
+      headers['Authorization'] = 'Bearer ' + token;
+      const res = await fetch(API_BASE + path, { ...opts, headers });
+      if (res.status === 401) {
+        localStorage.removeItem('lw_token');
+        window.location.href = 'index.html';
+        throw new Error('Unauthorized');
+      }
+      return res;
+    }
+
+    // display welcome name (try API /me for verification)
+    (async function loadUser(){
+      try {
+        const r = await api('/me');
+        const data = await r.json();
+        document.getElementById('welcome-text').textContent = `Welcome back, ${data.user.username}!`;
+      } catch (err) {
+        // fallback to saved username
+        const name = localStorage.getItem('lw_username') || 'Little Wins user';
+        document.getElementById('welcome-text').textContent = `Welcome back, ${name}!`;
+      }
+    })();
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('lw_token');
+      localStorage.removeItem('lw_username');
+      sessionStorage.removeItem('currentMode');
+      sessionStorage.removeItem('currentDuration');
+      sessionStorage.removeItem('currentActivity');
       window.location.href = 'index.html';
     });
 
-    // Session starten
-    const startBtn = document.getElementById('start-session-btn');
-    startBtn.addEventListener('click', async () => {
+    document.getElementById('start-session-btn').addEventListener('click', async () => {
       const mode = document.getElementById('mode-select').value;
-      const durationMinutes = document.getElementById('duration-select').value;
+      const duration = document.getElementById('duration-select').value;
 
       try {
-        const response = await fetch(`${backendBaseUrl}/api/sessions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            mode,
-            durationMinutes
-          })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          alert(data.error || 'Could not start session.');
+        // request one matching activity from backend
+        const qs = `?mode=${encodeURIComponent(mode)}&duration=${encodeURIComponent(duration)}`;
+        const r = await api('/activities' + qs);
+        const data = await r.json();
+        if (!r.ok) {
+          alert(data.error || 'Could not fetch activity');
           return;
         }
-
-        // Session-ID und Infos merken
-        localStorage.setItem('currentSessionId', data.id);
-        localStorage.setItem('currentMode', data.mode);
-        localStorage.setItem('currentDuration', data.durationMinutes);
-
-        // Weiter zur Activity-Seite (M4 kommt später)
+        // store transient session info in sessionStorage
+        sessionStorage.setItem('currentMode', mode);
+        sessionStorage.setItem('currentDuration', duration);
+        sessionStorage.setItem('currentActivity', JSON.stringify(data.activity || {}));
+        // go to activity page
         window.location.href = 'activity.html';
       } catch (err) {
         console.error(err);
-        alert('Error connecting to backend.');
+        alert('Error fetching activity');
       }
     });
   </script>
 </body>
-
 </html>

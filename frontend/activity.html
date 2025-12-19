@@ -1,38 +1,181 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Little Wins – Activity</title>
+  <meta charset="utf-8" />
+  <title>Little Wins — Activity</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
-
+  <script src="/frontend/config.js"></script>
 </head>
 <body>
-  <h1>Your Little Wins Activity</h1>
+  <main class="card">
+    <h1>Your Little Wins Activity</h1>
+    <p id="session-info" aria-live="polite"></p>
 
-  <p id="session-info"></p>
+    <section id="activity-area" class="activity" aria-live="polite">
+      <h2 id="activity-title"></h2>
+      <div id="activity-desc"></div>
+    </section>
 
-  <!-- Hier kommt später die echte Activity-Anzeige (M4) hin -->
+    <div class="controls">
+      <button id="another-btn">Show another activity</button>
+      <button id="done-btn">Done</button>
+      <button id="back-home-btn">Back to Home</button>
+    </div>
 
-  <button id="back-home-btn">Back to Home</button>
+    <div id="summary" class="hidden" aria-live="polite">
+      <h3>Well done!</h3>
+      <div id="summary-details"></div>
+      <button id="add-photo-btn">Add photo (optional)</button>
+      <input id="photo-input" type="file" accept="image/*" capture="environment" class="hidden" />
+    </div>
+  </main>
 
   <script>
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
-      window.location.href = 'index.html';
+    const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';
+    const token = localStorage.getItem('lw_token');
+    if (!token) window.location.href = 'index.html';
+
+    const mode = sessionStorage.getItem('currentMode');
+    const duration = sessionStorage.getItem('currentDuration');
+    let currentActivity = sessionStorage.getItem('currentActivity') ? JSON.parse(sessionStorage.getItem('currentActivity')) : null;
+    const startedAt = new Date().toISOString();
+
+    if (!mode || !duration) {
+      // if user opened this page directly, go back to home
+      window.location.href = 'home.html';
     }
 
-    const mode = localStorage.getItem('currentMode');
-    const duration = localStorage.getItem('currentDuration');
-    const sessionId = localStorage.getItem('currentSessionId');
+    const sessionInfo = document.getElementById('session-info');
+    const titleEl = document.getElementById('activity-title');
+    const descEl = document.getElementById('activity-desc');
+    const anotherBtn = document.getElementById('another-btn');
+    const doneBtn = document.getElementById('done-btn');
+    const backHomeBtn = document.getElementById('back-home-btn');
+    const addPhotoBtn = document.getElementById('add-photo-btn');
+    const photoInput = document.getElementById('photo-input');
+    const summaryEl = document.getElementById('summary');
+    const summaryDetails = document.getElementById('summary-details');
 
-    const info = document.getElementById('session-info');
-    info.textContent = `Session #${sessionId}: Mode = ${mode}, Duration = ${duration} minutes. (Activity display will follow in the next step.)`;
+    sessionInfo.textContent = `Mode: ${mode} • Duration: ${duration} min`;
 
-    const backBtn = document.getElementById('back-home-btn');
-    backBtn.addEventListener('click', () => {
+    async function api(path, opts = {}) {
+      const headers = opts.headers || {};
+      headers['Content-Type'] = 'application/json';
+      headers['Authorization'] = 'Bearer ' + token;
+      const res = await fetch(API_BASE + path, { ...opts, headers });
+      if (res.status === 401) {
+        localStorage.removeItem('lw_token');
+        window.location.href = 'index.html';
+        throw new Error('Unauthorized');
+      }
+      return res;
+    }
+
+    function renderActivity() {
+      if (!currentActivity) {
+        titleEl.textContent = '(No activity)';
+        descEl.textContent = '';
+        return;
+      }
+      titleEl.textContent = currentActivity.title;
+      descEl.textContent = currentActivity.description || '';
+      summaryEl.classList.add('hidden');
+    }
+
+    async function loadActivity(excludeId) {
+      try {
+        const q = `?mode=${encodeURIComponent(mode)}&duration=${encodeURIComponent(duration)}` + (excludeId ? `&excludeId=${encodeURIComponent(excludeId)}` : '');
+        const r = await api('/activities' + q);
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Could not load activity');
+        currentActivity = data.activity;
+        sessionStorage.setItem('currentActivity', JSON.stringify(currentActivity));
+        renderActivity();
+      } catch (err) {
+        titleEl.textContent = 'Could not load activity';
+        descEl.textContent = err.message || '';
+      }
+    }
+
+    anotherBtn.addEventListener('click', async () => {
+      if (!currentActivity) return;
+      await loadActivity(currentActivity.id);
+    });
+
+    doneBtn.addEventListener('click', async () => {
+      if (!currentActivity) return;
+      const completedAt = new Date().toISOString();
+      const payload = {
+        mode,
+        duration: Number(duration),
+        activityId: currentActivity.id,
+        activityTitle: currentActivity.title,
+        startedAt,
+        completedAt
+      };
+      try {
+        const r = await api('/sessions', { method: 'POST', body: JSON.stringify(payload) });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Failed to save session');
+        showSummary(data.session);
+      } catch (err) {
+        alert('Could not save session: ' + (err.message || ''));
+      }
+    });
+
+    function showSummary(session) {
+      summaryEl.classList.remove('hidden');
+      summaryDetails.innerHTML = '';
+      const p1 = document.createElement('p'); p1.textContent = `Mode: ${session.mode} • Duration: ${session.duration} min`;
+      const p2 = document.createElement('p'); p2.textContent = `Activity: ${session.activity_title}`;
+      const p3 = document.createElement('p'); p3.textContent = `Completed: ${new Date(session.completed_at).toLocaleString()}`;
+      summaryDetails.appendChild(p1); summaryDetails.appendChild(p2); summaryDetails.appendChild(p3);
+      if (session.photo) {
+        const img = document.createElement('img'); img.src = session.photo; img.style.maxWidth = '100%';
+        summaryDetails.appendChild(img);
+      }
+      if (session.id) localStorage.setItem('lw_lastSessionId', session.id);
+    }
+
+    addPhotoBtn.addEventListener('click', () => photoInput.click());
+    photoInput.addEventListener('change', async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f || !currentActivity) return;
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const dataUrl = ev.target.result;
+        const completedAt = new Date().toISOString();
+        const payload = {
+          mode,
+          duration: Number(duration),
+          activityId: currentActivity.id,
+          activityTitle: currentActivity.title,
+          startedAt,
+          completedAt,
+          photo: dataUrl
+        };
+        try {
+          const r = await api('/sessions', { method: 'POST', body: JSON.stringify(payload) });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || 'Could not save session with photo');
+          showSummary(data.session);
+        } catch (err) {
+          alert('Could not save session with photo');
+        }
+      };
+      reader.readAsDataURL(f);
+    });
+
+    backHomeBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('currentMode');
+      sessionStorage.removeItem('currentDuration');
+      sessionStorage.removeItem('currentActivity');
       window.location.href = 'home.html';
     });
+
+    // initial render (activity was placed in sessionStorage by home.html)
+    if (currentActivity) renderActivity(); else loadActivity().catch(()=>{});
   </script>
 </body>
 </html>

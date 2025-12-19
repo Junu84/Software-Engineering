@@ -1,28 +1,85 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Little Wins – Login</title>
+  <meta charset="utf-8" />
+  <title>Little Wins — Login / Register</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
-
+  <script src="/frontend/config.js"></script>
 </head>
 <body>
-  <div class="container">
+  <main class="card">
     <h1>Little Wins</h1>
-    <h2>Login</h2>
-    <input id="login-email" type="email" placeholder="Email">
-    <input id="login-password" type="password" placeholder="Password">
-    <button id="login-btn">Login</button>
-    <p id="login-msg"></p>
 
-    <h2>Register</h2>
-    <input id="reg-email" type="email" placeholder="Email">
-    <input id="reg-username" type="text" placeholder="Username">
-    <input id="reg-password" type="password" placeholder="Password">
-    <button id="register-btn">Register</button>
-    <p id="register-msg"></p>
-  </div>
+    <section id="auth-forms">
+      <div id="register">
+        <h2>Register</h2>
+        <input id="reg-email" placeholder="Email" type="email" required />
+        <input id="reg-username" placeholder="Username" required />
+        <input id="reg-password" placeholder="Password" type="password" required />
+        <button id="reg-btn">Create account</button>
+      </div>
+
+      <hr/>
+
+      <div id="login">
+        <h2>Login</h2>
+        <input id="login-identity" placeholder="Email or username" required />
+        <input id="login-password" placeholder="Password" type="password" required />
+        <button id="login-btn">Log in</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // API base (adjust port if needed)
+    const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';;
+
+    function setToken(token) { localStorage.setItem('lw_token', token); }
+    function clearToken() { localStorage.removeItem('lw_token'); }
+
+    async function callApi(path, opts = {}) {
+      const headers = opts.headers || {};
+      headers['Content-Type'] = 'application/json';
+      const res = await fetch(API_BASE + path, { ...opts, headers });
+      return res;
+    }
+
+    document.getElementById('reg-btn').addEventListener('click', async () => {
+      const email = document.getElementById('reg-email').value.trim();
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+      if (!email || !username || !password) return alert('Fill all fields');
+      try {
+        const r = await callApi('/register', { method: 'POST', body: JSON.stringify({ email, username, password }) });
+        const data = await r.json();
+        if (!r.ok) return alert(data.error || 'Registration failed');
+        setToken(data.token);
+        // optional: store username
+        localStorage.setItem('lw_username', data.user.username || username);
+        window.location.href = 'home.html';
+      } catch (err) {
+        console.error(err);
+        alert('Registration error');
+      }
+    });
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const identity = document.getElementById('login-identity').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!identity || !password) return alert('Fill all fields');
+      try {
+        const r = await callApi('/login', { method: 'POST', body: JSON.stringify({ identity, password }) });
+        const data = await r.json();
+        if (!r.ok) return alert(data.error || 'Login failed');
+        setToken(data.token);
+        localStorage.setItem('lw_username', data.user.username || identity);
+        window.location.href = 'home.html';
+      } catch (err) {
+        console.error(err);
+        alert('Login error');
+      }
+    });
+  </script>
 </body>
-
 </html>

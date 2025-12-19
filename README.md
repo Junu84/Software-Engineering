@@ -68,7 +68,34 @@ Initial setup and MVP features are being implemented step by step.
 
 ---
 
-## 📄 Course Context
-This project is developed as part of the **Software Engineering** course  
-(FH Campus Wien – Computer Science & Digital Communication).
+## 📄
+# Little Wins — Fullstack MVP (Node + Express + SQLite)
+
+This scaffold implements the MUST requirements of the Little Wins SRS/HLD:
+- Account registration/login/logout (JWT) — M1
+- Mode selection and duration selection — M2, M3
+- Activity selection (exactly one per session) — M4
+- Mark activity done + summary storage — M5, M6
+- Store session completions and provide 7-day statistics + per-mode counts — M7, S2
+- Multiple activities per mode (seeded) — S1
+- Responsive frontend (simple SPA) — S3
+
+Tech:
+- Node.js, Express
+- better-sqlite3 (SQLite) for persistence
+- bcryptjs for password hashing, jsonwebtoken for JWT
+
+Quick start:
+1. Ensure Node.js 16+ is installed.
+2. Install dependencies:
+   npm install
+3. Seed database and start server:
+   npm run start
+   (The server will create `littlewins.db` and seed activities if missing.)
+4. Open `frontend/index.html` in a browser (or serve it from the `frontend/` folder).
+
+Notes:
+- JWT secret currently defaults to `super-secret-dev-key` (for dev only). Use an environment variable `JWT_SECRET` for production.
+- For production, run frontend from a proper host and use HTTPS. Replace client-side JWT storage or use httpOnly cookies if needed.
+- To extend: implement external activity connectors in `backend/routes/activities.js` and isolate sensor/GPS logic server-side or client-side per HLD.
 
