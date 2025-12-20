@@ -140,6 +140,20 @@ app.get('/api/sessions/stats', authMiddleware, (req, res) => {
   res.json({ days, modeCounts, total: sessions.length });
 });
 
+// Daily counts: number of completed sessions per calendar day for current user
+app.get('/api/sessions/daily-counts', authMiddleware, (req, res) => {
+  const rows = db.prepare(`
+    SELECT substr(completed_at, 1, 10) AS day, COUNT(*) AS count
+    FROM sessions
+    WHERE user_id = ?
+    GROUP BY day
+    ORDER BY day DESC
+  `).all(req.user.id);
+
+  res.json({ days: rows });
+});
+
+
 // Simple route to list all activities (admin / debugging)
 app.get('/api/activities/all', (req, res) => {
   const rows = db.prepare('SELECT * FROM activities').all();

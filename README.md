@@ -99,3 +99,122 @@ Notes:
 - For production, run frontend from a proper host and use HTTPS. Replace client-side JWT storage or use httpOnly cookies if needed.
 - To extend: implement external activity connectors in `backend/routes/activities.js` and isolate sensor/GPS logic server-side or client-side per HLD.
 
+🛠 Little Wins – Setup nach git pull
+
+
+✅ Voraussetzungen (wichtig)
+
+Node.js Version: v20 (LTS)
+
+❌ Node 22 / 24 funktioniert nicht zuverlässig mit SQLite
+
+Prüfen:
+
+node -v
+
+📦 Projektstruktur (relevant)
+little-wins/
+├── backend/
+│   ├── db.js        # DB + Migration-light
+│   ├── seed.js      # Activities (Upsert)
+│   ├── server.js    # Express API
+│   └── package.json
+│
+├── frontend/
+│   ├── index.html
+│   ├── home.html
+│   ├── activity.html
+│   └── config.js
+
+
+⚠️ Die SQLite-DB (littlewins.db) ist NICHT im Git
+→ jede Person hat eine eigene lokale DB.
+
+🚀 Schritt-für-Schritt Setup
+1️⃣ Backend vorbereiten
+cd backend
+npm install
+
+2️⃣ Activities seeden (wichtig!)
+node seed.js
+
+
+💡 seed.js verwendet UPSERT:
+
+fügt neue Activities hinzu
+
+aktualisiert bestehende (z.B. activity_type)
+
+kann jederzeit erneut ausgeführt werden
+
+3️⃣ Backend starten
+npm start
+
+
+Erwartete Ausgabe:
+
+Little Wins API running on http://localhost:3000
+
+
+⚠️ Dieses Terminal offen lassen!
+Wenn es geschlossen wird, funktionieren Login & Registrierung nicht.
+
+4️⃣ Frontend starten
+
+VS Code
+
+Rechtsklick auf frontend/index.html
+
+Open with Live Server
+
+Frontend läuft z. B. unter:
+
+http://127.0.0.1:5500/frontend/index.html
+
+⚙️ config.js überprüfen
+
+Datei: frontend/config.js
+
+window.LW_CONFIG = {
+  API_BASE: 'http://127.0.0.1:3000/api'
+};
+
+
+❌ kein localhost
+✅ immer 127.0.0.1
+
+🔐 Funktionstest
+
+Seite neu laden (Strg + F5)
+
+Registrieren oder Einloggen
+
+Nach Login erscheint:
+
+Welcome back, <username>!
+
+
+→ ✅ Setup erfolgreich
+
+🧠 Wichtige Hinweise fürs Team
+🔹 Datenbank & Migration
+
+Tabellen werden automatisch in db.js erstellt
+
+Neue Spalten werden per Migration-light ergänzt
+
+Niemand muss die DB löschen
+
+🔹 seed.js (sehr wichtig)
+
+seed.js füllt die Tabelle activities
+
+darf jederzeit ausgeführt werden
+
+erzeugt keine Duplikate
+
+
+
+
+
+

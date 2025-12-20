@@ -98,7 +98,12 @@
         // store transient session info in sessionStorage
         sessionStorage.setItem('currentMode', mode);
         sessionStorage.setItem('currentDuration', duration);
-        sessionStorage.setItem('currentActivity', JSON.stringify(data.activity || {}));
+        if (!data.activity || !data.activity.id) {
+          alert('Could not fetch activity');
+          return;
+        }
+        sessionStorage.setItem('currentActivity', JSON.stringify(data.activity));
+
         // go to activity page
         window.location.href = 'activity.html';
       } catch (err) {

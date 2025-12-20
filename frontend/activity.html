@@ -128,7 +128,7 @@
       summaryEl.classList.remove('hidden');
       summaryDetails.innerHTML = '';
       const p1 = document.createElement('p'); p1.textContent = `Mode: ${session.mode} • Duration: ${session.duration} min`;
-      const p2 = document.createElement('p'); p2.textContent = `Activity: ${session.activity_title}`;
+      const p2 = document.createElement('p'); p2.textContent = `Activity: ${session.activity_title || session.activityTitle || ''}`;
       const p3 = document.createElement('p'); p3.textContent = `Completed: ${new Date(session.completed_at).toLocaleString()}`;
       summaryDetails.appendChild(p1); summaryDetails.appendChild(p2); summaryDetails.appendChild(p3);
       if (session.photo) {
