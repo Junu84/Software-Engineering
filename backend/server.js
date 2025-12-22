@@ -89,7 +89,7 @@ app.get('/api/me', authMiddleware, (req, res) => {
   res.json({ user: u });
 });
 
-// ✅ Activities selection (S1 improvement: avoid repeating last activity)
+// Activities selection (S1 improvement: avoid repeating last activity)
 app.get('/api/activities', authMiddleware, (req, res) => {
   const { mode, duration } = req.query;
   if (!mode) return res.status(400).json({ error: 'mode required' });
@@ -151,7 +151,7 @@ app.post('/api/sessions', authMiddleware, (req, res) => {
     return res.status(400).json({ error: 'Missing required session fields' });
   }
 
-  // ✅ M3 duration validation (make sure duration is a Number)
+  // M3 duration validation (make sure duration is a Number)
   const durNum = Number(duration);
   const allowedDurations = [3, 5, 10, 15];
   if (!allowedDurations.includes(durNum)) {

@@ -36,6 +36,7 @@
 
     <button id="start-session-btn">Start Session</button>
     <hr />
+    <button id="stats-btn">View Stats</button>
     <button id="logout-btn">Logout</button>
   </main>
 
@@ -81,6 +82,11 @@
       sessionStorage.removeItem('currentActivity');
       window.location.href = 'index.html';
     });
+
+    document.getElementById('stats-btn').addEventListener('click', () => {
+      window.location.href = 'stats.html';
+    });
+
 
     document.getElementById('start-session-btn').addEventListener('click', async () => {
       const mode = document.getElementById('mode-select').value;
