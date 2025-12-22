@@ -1,28 +1,58 @@
 /* --- GLOBAL STYLES --- */
 
+:root{
+  --bg: #F8F7FF;
+  --text: #2D1E4F;
+  --primary: #9B5DE5;
+  --accent: #F15BB5;
+
+  --lav-border: #E9DDFF;
+  --lav-soft: #F3ECFF;
+  --row-alt: #FBFAFF;
+  --row-hover: #FFF0FA;
+
+  /* NEW: highlight colors (no green) */
+  --today-bg: #FFF0FA;
+  --today-border: #F3C4E9;
+  --today-text: #F15BB5;
+}
+
+* { box-sizing: border-box; }
+
 body {
   font-family: 'Nunito', sans-serif;
-  background: #F8F7FF; /* Snow white lavender */
-  color: #2D1E4F; /* Deep navy */
+  background: var(--bg);
+  color: var(--text);
   margin: 0;
-  padding: 40px;
+  padding: 24px; /* single source of truth */
 }
 
 h1, h2 {
   font-family: 'Poppins', sans-serif;
-  color: #9B5DE5; /* Purple primary */
+  color: var(--primary);
   font-weight: 600;
   margin-top: 0;
 }
 
-h2 {
-  margin-top: 18px;
+h2 { margin-top: 18px; }
+
+/* --- CONTAINER / CARD --- */
+
+.container,
+.card {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  background: white;
+  padding: 26px;
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(155, 93, 229, 0.14);
 }
 
-/* BUTTON STYLE */
+/* --- BUTTON STYLE --- */
 
 button {
-  background: #9B5DE5;
+  background: var(--primary);
   border: none;
   padding: 12px 20px;
   color: white;
@@ -31,44 +61,27 @@ button {
   font-size: 16px;
   cursor: pointer;
   transition: 0.2s;
+  width: auto; /* important: don't force full width on desktop */
 }
 
 button:hover {
-  background: #F15BB5; /* Pink accent */
+  background: var(--accent);
   transform: translateY(-2px);
 }
 
-/* INPUTS & SELECTS */
+/* --- INPUTS & SELECTS --- */
 
 input, select {
   padding: 10px;
   border-radius: 8px;
-  border: 2px solid #CDB4FF; /* Lavender */
+  border: 2px solid #CDB4FF;
   margin-top: 8px;
-  width: 250px;
+  width: 100%;            /* responsive by default */
+  max-width: 420px;       /* keeps it nice on desktop */
   font-family: 'Nunito', sans-serif;
 }
 
-/* CONTAINER (for home, login, register pages) */
-
-.container {
-  max-width: 480px;
-  background: white;
-  padding: 25px;
-  border-radius: 16px;
-  margin: auto;
-  box-shadow: 0 6px 20px rgba(155, 93, 229, 0.15);
-}
-
-/* Optional: If you're using .card (your HTML uses it), style it too */
-.card {
-  max-width: 520px;
-  background: white;
-  padding: 26px;
-  border-radius: 18px;
-  margin: auto;
-  box-shadow: 0 10px 26px rgba(155, 93, 229, 0.14);
-}
+/* --- CONTROLS (button row) --- */
 
 .controls {
   margin-top: 16px;
@@ -91,81 +104,98 @@ input, select {
   margin-top: 12px;
   margin-bottom: 18px;
   background: white;
-  border: 2px solid #E9DDFF; /* soft lavender border */
+  border: 2px solid var(--lav-border);
   border-radius: 14px;
-  overflow: hidden; /* keeps rounded corners clean */
+  overflow: hidden;
   box-shadow: 0 6px 18px rgba(155, 93, 229, 0.08);
 }
 
 .table thead th {
-  background: #F3ECFF; /* very light purple */
-  color: #2D1E4F;
+  background: var(--lav-soft);
+  color: var(--text);
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
   padding: 12px 14px;
-  border-bottom: 2px solid #E9DDFF;
+  border-bottom: 2px solid var(--lav-border);
 }
 
 .table tbody td {
   padding: 12px 14px;
   border-bottom: 1px solid #F0E9FF;
-  color: #2D1E4F;
+  color: var(--text);
 }
 
 .table tbody tr:nth-child(even) {
-  background: #FBFAFF; /* subtle zebra */
+  background: var(--row-alt);
 }
 
 .table tbody tr:hover {
-  background: #FFF0FA; /* gentle pink hover */
+  background: var(--row-hover);
   transform: translateY(-1px);
   transition: 0.15s ease;
 }
 
-/* make the “Sessions / Count” column feel like a badge */
+/* count column: badge vibe */
 .table td:last-child {
   font-weight: 700;
-  color: #9B5DE5;
+  color: var(--primary);
 }
 
-/* align counts nicely */
+/* align counts */
 .table th:last-child,
 .table td:last-child {
   text-align: right;
 }
 
-/* --- “Today” highlight row (we’ll add a class via JS) --- */
+/* --- “Today” highlight row (no green) --- */
 .table tbody tr.is-today {
-  background: #EFFFF7 !important; /* very light mint */
+  background: var(--today-bg) !important;
+  outline: 2px solid var(--today-border);
+  outline-offset: -2px;
 }
 
 .table tbody tr.is-today td:last-child {
-  color: #059361; /* green-ish success vibe */
+  color: var(--today-text);
 }
 
-/* --- RESPONSIVE MOBILE UI (S3-friendly) --- */
+/* streak text (no green) */
+#stats-streak {
+  margin-top: 6px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* --- RESPONSIVE (S3) --- */
+
 @media (max-width: 600px) {
-  body {
-    padding: 16px;
-  }
+  body { padding: 16px; }
 
-  .card, .container {
+  h1 { font-size: 34px; line-height: 1.1; }
+  h2 { font-size: 22px; }
+
+  .container, .card {
     padding: 18px;
+    border-radius: 14px;
   }
 
-  input, select {
-    width: 100%;
+  /* stack buttons vertically on mobile */
+  .controls {
+    display: grid;
+    gap: 10px;
   }
 
   .controls button {
-    width: 100%;
     min-width: unset;
+    width: 100%;
+  }
+
+  /* tables: tighter */
+  .table th, .table td {
+    padding: 10px 12px;
   }
 }
 
-#stats-streak {
-  margin-top: 6px;
-  font-weight: 600;
-  color: #0b7359; /* soft success green */
+@media (max-width: 380px) {
+  h1 { font-size: 30px; }
+  button { font-size: 15px; padding: 11px 14px; }
 }
-

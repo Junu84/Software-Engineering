@@ -60,29 +60,29 @@
     }
 
     function renderDays(days) {
-  const tbody = document.querySelector('#days-table tbody');
-  tbody.innerHTML = '';
+        const tbody = document.querySelector('#days-table tbody');
+        tbody.innerHTML = '';
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+        const todayKey = new Date().toISOString().slice(0, 10);
 
-  days.forEach(d => {
-    const tr = document.createElement('tr');
+        days.forEach(d => {
+            const tr = document.createElement('tr');
 
-    if (d.key === todayKey) {
-      tr.classList.add('is-today'); //  adds the highlight
+            const dayKey = d.key || (d.date ? String(d.date).slice(0,10) : '');
+            if (dayKey === todayKey) tr.classList.add('is-today');
+
+
+            const tdDate = document.createElement('td');
+            tdDate.textContent = d.label || d.key;
+
+            const tdCount = document.createElement('td');
+            tdCount.textContent = d.count;
+
+            tr.appendChild(tdDate);
+            tr.appendChild(tdCount);
+            tbody.appendChild(tr);
+        });
     }
-
-    const tdDate = document.createElement('td');
-    tdDate.textContent = d.label || d.key;
-
-    const tdCount = document.createElement('td');
-    tdCount.textContent = d.count;
-
-    tr.appendChild(tdDate);
-    tr.appendChild(tdCount);
-    tbody.appendChild(tr);
-  });
-}
 
 
     function renderModes(modeCounts) {
