@@ -131,6 +131,21 @@
       const p2 = document.createElement('p'); p2.textContent = `Activity: ${session.activity_title || session.activityTitle || ''}`;
       const p3 = document.createElement('p'); p3.textContent = `Completed: ${new Date(session.completed_at).toLocaleString()}`;
       summaryDetails.appendChild(p1); summaryDetails.appendChild(p2); summaryDetails.appendChild(p3);
+      
+      // Motivational message
+    const messages = [
+      "Great job! 🌟",
+      "Every little win counts 💜",
+      "You did something good for yourself!",
+      "Well done — keep going 💪"
+    ];
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+
+    const p4 = document.createElement('p');
+    p4.textContent = msg;
+    summaryDetails.appendChild(p4);
+    
+    //show photo if exists
       if (session.photo) {
         const img = document.createElement('img'); img.src = session.photo; img.style.maxWidth = '100%';
         summaryDetails.appendChild(img);
