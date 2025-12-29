@@ -75,13 +75,20 @@
     function renderActivity() {
       if (!currentActivity) {
         titleEl.textContent = '(No activity)';
-        descEl.textContent = '';
+        descEl.innerHTML = '';
+        summaryEl.classList.add('hidden');
         return;
       }
+
       titleEl.textContent = currentActivity.title;
-      descEl.textContent = currentActivity.description || '';
+
+      descEl.innerHTML =
+        `<p><strong>Type:</strong> ${currentActivity.activity_type || 'generic'}</p>` +
+        `<p>${currentActivity.description || ''}</p>`;
+
       summaryEl.classList.add('hidden');
     }
+
 
     async function loadActivity(excludeId) {
       try {

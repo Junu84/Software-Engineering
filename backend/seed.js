@@ -26,14 +26,15 @@ const ACTIVITIES = [
 function seedUpsert() {
   // SQLite UPSERT using ON CONFLICT(id) DO UPDATE
   const upsert = db.prepare(`
-    INSERT INTO activities (id, mode, title, description, duration_hints, activity_type)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO activities (id, mode, title, description, duration_hints, activity_type, payload)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       mode = excluded.mode,
       title = excluded.title,
       description = excluded.description,
       duration_hints = excluded.duration_hints,
       activity_type = excluded.activity_type
+      payload = excluded.payload
   `);
 
   const tx = db.transaction((items) => {
@@ -44,7 +45,8 @@ function seedUpsert() {
         a.title,
         a.description,
         a.duration_hints || '',
-        a.activity_type || 'generic'
+        a.activity_type || 'generic',
+        a.payload ? JSON.stringify(a.payload) : null
       );
     }
   });

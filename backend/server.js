@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
+const { getActivity } = require('./activityService');
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev-key';
 const app = express();
@@ -89,59 +91,28 @@ app.get('/api/me', authMiddleware, (req, res) => {
   res.json({ user: u });
 });
 
-// Activities selection (S1 improvement: avoid repeating last activity)
+// Activities selection (S5: delegated to activityService)
 app.get('/api/activities', authMiddleware, (req, res) => {
-  const { mode, duration } = req.query;
-  if (!mode) return res.status(400).json({ error: 'mode required' });
+  const { mode, duration, excludeId } = req.query;
 
-  const dur = duration ? Number(duration) : null;
-
-  // 1) read last activity data for this user
-  const last = db.prepare(`
-    SELECT last_activity_id, last_mode, last_duration
-    FROM users
-    WHERE id = ?
-  `).get(req.user.id);
-
-  // 2) fetch matching activities
-  let rows;
-  if (dur) {
-    rows = db.prepare(`
-      SELECT * FROM activities
-      WHERE mode = ?
-      AND (instr(duration_hints, ?) OR duration_hints = '')
-    `).all(mode, String(dur));
-  } else {
-    rows = db.prepare('SELECT * FROM activities WHERE mode = ?').all(mode);
+  if (!mode) {
+    return res.status(400).json({ error: 'mode required' });
   }
 
-  if (!rows || rows.length === 0) {
-    return res.status(404).json({ error: 'No activities found for this mode' });
+  const activity = getActivity({
+    db,
+    mode,
+    duration,
+    excludeId
+  });
+
+  if (!activity) {
+    return res.status(404).json({ error: 'No activity found' });
   }
 
-  // 3) exclude last activity if same mode+duration
-  let candidates = rows;
-  if (
-    last?.last_activity_id &&
-    last?.last_mode === mode &&
-    Number(last?.last_duration) === dur
-  ) {
-    candidates = rows.filter(r => r.id !== last.last_activity_id);
-    if (candidates.length === 0) candidates = rows; // fallback
-  }
-
-  // 4) select random activity
-  const selected = candidates[Math.floor(Math.random() * candidates.length)];
-
-  // 5) store last selection for next request
-  db.prepare(`
-    UPDATE users
-    SET last_activity_id = ?, last_mode = ?, last_duration = ?
-    WHERE id = ?
-  `).run(selected.id, mode, dur, req.user.id);
-
-  res.json({ activity: selected });
+  res.json({ activity });
 });
+
 
 // Create a session (complete)
 app.post('/api/sessions', authMiddleware, (req, res) => {
