@@ -199,3 +199,66 @@ input, select {
   h1 { font-size: 30px; }
   button { font-size: 15px; padding: 11px 14px; }
 }
+/* --- HOME TABS  --- */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0 18px;
+}
+
+.tab-btn {
+  background: #F3ECFF;          /* light purple */
+  color: #2D1E4F;
+  border: 2px solid #E9DDFF;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.tab-btn:hover {
+  transform: translateY(-1px);
+  background: #FFF0FA;          /* soft pink hover */
+}
+
+.tab-btn.is-active {
+  background: #9B5DE5;          /* purple */
+  color: white;
+  border-color: #9B5DE5;
+}
+
+.tab-panel {
+  display: none;
+  padding-top: 4px;
+}
+
+.tab-panel.is-active {
+  display: block;
+}
+
+.footer-actions {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid #E9DDFF;
+}
+
+/* Secondary button for logout (less attention than main actions) */
+.btn-secondary {
+  background: #F3ECFF;
+  color: #2D1E4F;
+  border: 2px solid #E9DDFF;
+}
+
+.btn-secondary:hover {
+  background: #FFE3F3;
+}
+
+/* Mobile: tabs stack nicer */
+@media (max-width: 600px) {
+  .tabs {
+    grid-template-columns: 1fr;
+  }
+}

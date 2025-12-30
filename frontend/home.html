@@ -9,35 +9,85 @@
 </head>
 <body>
   <main class="card">
-    <h1>Little Wins — Home</h1>
-    <p id="welcome-text"></p>
 
-    <h2>Start a Little Wins Session</h2>
+      <h1>Little Wins — Home</h1>
+      <p id="welcome-text"></p>
 
-    <div>
-      <label for="mode-select">Mode:</label>
-      <select id="mode-select">
-        <option value="Mood Booster">Mood Booster</option>
-        <option value="Brain Booster">Brain Booster</option>
-        <option value="Relax & Reset">Relax & Reset</option>
-        <option value="Kindness & Connection">Kindness & Connection</option>
-      </select>
-    </div>
+      <!-- MINI MENU / TABS -->
+      <nav class="tabs" aria-label="Home menu">
+        <button class="tab-btn is-active" data-tab="tab-session" type="button">Start Session</button>
+        <button class="tab-btn" data-tab="tab-reminders" type="button">Reminders</button>
+        <button class="tab-btn" data-tab="tab-stats" type="button">Stats</button>
+      </nav>
 
-    <div>
-      <label for="duration-select">Duration (minutes):</label>
-      <select id="duration-select">
-        <option value="3">3</option>
-        <option value="5" selected>5</option>
-        <option value="10">10</option>
-        <option value="15">15</option>
-      </select>
-    </div>
+      <!-- TAB: START SESSION -->
+      <section id="tab-session" class="tab-panel is-active" aria-live="polite">
+        <h2>Start a Little Wins Session</h2>
 
-    <button id="start-session-btn">Start Session</button>
-    <hr />
-    <button id="stats-btn">View Stats</button>
-    <button id="logout-btn">Logout</button>
+        <div>
+          <label for="mode-select">Mode:</label>
+          <select id="mode-select">
+            <option value="Mood Booster">Mood Booster</option>
+            <option value="Brain Booster">Brain Booster</option>
+            <option value="Relax & Reset">Relax & Reset</option>
+            <option value="Kindness & Connection">Kindness & Connection</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="duration-select">Duration (minutes):</label>
+          <select id="duration-select">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+          </select>
+        </div>
+
+        <div class="controls">
+          <button id="start-session-btn" type="button">Start Session</button>
+        </div>
+      </section>
+
+      <!-- TAB: REMINDERS -->
+      <section id="tab-reminders" class="tab-panel" aria-live="polite">
+        <h2>Reminders</h2>
+
+        <div class="controls">
+          <button id="enable-notifications-btn" type="button">Enable notifications</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label for="remind-time"><strong>Remind me at:</strong></label><br />
+          <input id="remind-time" type="time" />
+
+          <select id="remind-day">
+            <option value="today" selected>Today</option>
+            <option value="tomorrow">Tomorrow</option>
+          </select>
+
+          <div class="controls">
+            <button id="remind-at-btn" type="button">Set reminder</button>
+          </div>
+        </div>
+
+        <p id="notify-status" aria-live="polite"></p>
+      </section>
+
+      <!-- TAB: STATS -->
+      <section id="tab-stats" class="tab-panel" aria-live="polite">
+        <h2>Stats</h2>
+        <p>Your progress is saved — want to see the last 7 days?</p>
+
+        <div class="controls">
+          <button id="stats-btn" type="button">Open Stats</button>
+        </div>
+      </section>
+
+      <!-- FOOTER ACTION -->
+      <div class="footer-actions">
+        <button id="logout-btn" class="btn-secondary" type="button">Logout</button>
+      </div>
   </main>
 
   <script>
@@ -60,6 +110,19 @@
       }
       return res;
     }
+      // --- Tab logic ---
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-panel');
+
+      function openTab(panelId) {
+        tabButtons.forEach(b => b.classList.toggle('is-active', b.dataset.tab === panelId));
+        tabPanels.forEach(p => p.classList.toggle('is-active', p.id === panelId));
+      }
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => openTab(btn.dataset.tab));
+      });
+
 
     // display welcome name (try API /me for verification)
     (async function loadUser(){
@@ -117,6 +180,79 @@
         alert('Error fetching activity');
       }
     });
+
+    const enableBtn = document.getElementById('enable-notifications-btn');
+    const remindAtBtn = document.getElementById('remind-at-btn');
+    const remindTime = document.getElementById('remind-time');
+    const remindDay = document.getElementById('remind-day');
+    const notifyStatus = document.getElementById('notify-status');
+
+    function canNotify() {
+      return 'Notification' in window;
+    }
+
+    enableBtn.addEventListener('click', async () => {
+      if (!canNotify()) {
+        notifyStatus.textContent = "Notifications are not supported in this browser.";
+        return;
+      }
+      const result = await Notification.requestPermission();
+      notifyStatus.textContent =
+        result === 'granted'
+          ? "✅ Notifications enabled!"
+          : "❌ Notifications blocked. You can allow them in browser settings.";
+    });
+
+    function msUntil(targetDate) {
+      return targetDate.getTime() - Date.now();
+    }
+
+    remindAtBtn.addEventListener('click', () => {
+      if (!canNotify()) {
+        notifyStatus.textContent = "Notifications are not supported in this browser.";
+        return;
+      }
+      if (Notification.permission !== 'granted') {
+        notifyStatus.textContent = "Please enable notifications first.";
+        return;
+      }
+
+      const timeVal = remindTime.value; // "17:00"
+      if (!timeVal) {
+        notifyStatus.textContent = "Please choose a time first.";
+        return;
+      }
+
+      const [hh, mm] = timeVal.split(':').map(Number);
+
+      // Build target date
+      const target = new Date();
+      target.setSeconds(0, 0);
+      target.setHours(hh, mm, 0, 0);
+
+      // If user selected tomorrow, force +1 day
+      if (remindDay.value === 'tomorrow') {
+        target.setDate(target.getDate() + 1);
+      } else {
+        // "today": if time already passed, auto-suggest tomorrow
+        if (target.getTime() <= Date.now()) {
+          notifyStatus.textContent =
+            "That time is already passed today — choose 'Tomorrow' or a later time.";
+          return;
+        }
+      }
+
+      const delay = msUntil(target);
+      notifyStatus.textContent = `⏳ Okay! I’ll remind you at ${timeVal} (${remindDay.value}).`;
+
+      setTimeout(() => {
+        new Notification("Little Wins ✨", {
+          body: "Ready for a quick session? It only takes a few minutes 💜",
+        });
+      }, delay);
+    });
+
+
   </script>
 </body>
 </html>
