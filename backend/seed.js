@@ -33,7 +33,7 @@ function seedUpsert() {
       title = excluded.title,
       description = excluded.description,
       duration_hints = excluded.duration_hints,
-      activity_type = excluded.activity_type
+      activity_type = excluded.activity_type,
       payload = excluded.payload
   `);
 
