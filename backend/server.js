@@ -116,7 +116,7 @@ app.get('/api/activities', authMiddleware, (req, res) => {
 
 // Create a session (complete)
 app.post('/api/sessions', authMiddleware, (req, res) => {
-  const { mode, duration, activityId, activityTitle, startedAt, completedAt, photo } = req.body;
+  const { mode, duration, activityId, activityTitle, startedAt, completedAt, photo, sensorResult } = req.body;
 
   if (!mode || duration === undefined || !activityId || !activityTitle || !completedAt) {
     return res.status(400).json({ error: 'Missing required session fields' });
@@ -131,9 +131,9 @@ app.post('/api/sessions', authMiddleware, (req, res) => {
 
   const stmt = db.prepare(`
     INSERT INTO sessions
-      (user_id, mode, duration, activity_id, activity_title, started_at, completed_at, photo)
+      (user_id, mode, duration, activity_id, activity_title, started_at, completed_at, photo, sensor_result)
     VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?)
+      (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const info = stmt.run(
@@ -144,7 +144,8 @@ app.post('/api/sessions', authMiddleware, (req, res) => {
     activityTitle,
     startedAt || null,
     completedAt,
-    photo || null
+    photo || null,
+    sensorResult ? JSON.stringify(sensorResult) : null
   );
 
   const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(info.lastInsertRowid);

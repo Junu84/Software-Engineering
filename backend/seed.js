@@ -12,15 +12,23 @@ const ACTIVITIES = [
   { id: 'b2', mode: 'Brain Booster', title: 'Mini logic puzzle', description: 'Name 5 animals whose names start with the same letter in 2 minutes.', duration_hints: '5,10', activity_type: 'brain' },
   { id: 'b3', mode: 'Brain Booster', title: 'Memory test', description: 'Try to recall the items in the last shop you visited, list at least 6.', duration_hints: '5,10', activity_type: 'brain' },
 
+  // Sensor activity
+  { id: 's2', mode: 'Mood Booster', title: 'Shake It Out', description: 'Shake your phone gently for a few seconds to release tension.', duration_hints: '3,5', activity_type: 'sensor', payload: { sensor: 'motion', goal: 'shake'}},
+
+
   // Relax & Reset
   { id: 'r1', mode: 'Relax & Reset', title: 'Box breathing', description: '4-4-4-4 breathing: inhale- hold-exhale-hold for 4 counts. Repeat for the session.', duration_hints: '3,5,10', activity_type: 'relax' },
   { id: 'r2', mode: 'Relax & Reset', title: 'Grounding', description: 'Name 5 things you can see, 4 you can touch, 3 you can hear.', duration_hints: '3,5', activity_type: 'relax' },
   { id: 'r3', mode: 'Relax & Reset', title: 'Shoulder release', description: 'Slowly roll your shoulders and stretch your neck for a minute.', duration_hints: '3,5,10', activity_type: 'relax' },
+  //GPS sensor activity
+  {id: 'gps1', mode: 'Relax & Reset', title: 'Tiny Walk GPS Check', description: 'Go outside for a moment. We will save your rough location (lat/lng) as a sensor result.', duration_hints: '3,5,10', activity_type: 'sensor', payload: { sensor: 'geolocation', accuracy: 'low' }},
 
   // Kindness & Connection
   { id: 'k1', mode: 'Kindness & Connection', title: 'Compliment someone', description: 'Give a genuine compliment to a person nearby or send one via message.', duration_hints: '3,5', activity_type: 'kindness' },
   { id: 'k2', mode: 'Kindness & Connection', title: 'Tiny favor', description: 'Do one small helpful thing for someone (hold a door, offer directions).', duration_hints: '3,5,10', activity_type: 'kindness' },
-  { id: 'k3', mode: 'Kindness & Connection', title: 'Reflect & reach out', description: "Text someone: 'I thought of you — hope you're well.'", duration_hints: '3,5', activity_type: 'kindness' }
+  { id: 'k3', mode: 'Kindness & Connection', title: 'Reflect & reach out', description: "Text someone: 'I thought of you — hope you're well.'", duration_hints: '3,5', activity_type: 'kindness' },
+
+  
 ];
 
 function seedUpsert() {

@@ -1,10 +1,13 @@
 // activityService.js
 function parsePayload(row) {
   if (!row) return row;
-  let payload = null;
-  try { payload = row.payload ? JSON.parse(row.payload) : null; } catch {}
-  return { ...row, payload };
+  if (row.payload) {
+    try { row.payload = JSON.parse(row.payload); }
+    catch { row.payload = null; }
+  }
+  return row;
 }
+
 
 function getActivity({ db, mode, duration, excludeId }) {
   const dur = duration ? Number(duration) : null;
