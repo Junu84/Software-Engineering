@@ -262,3 +262,37 @@ input, select {
     grid-template-columns: 1fr;
   }
 }
+
+/* HOME TABS / MENU (S4) */
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 18px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  flex: 1;
+  background: #F3ECFF;
+  color: #2D1E4F;
+  border: 2px solid #E9DDFF;
+}
+
+.tab-btn.is-active {
+  background: #9B5DE5;
+  color: white;
+  border-color: #9B5DE5;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.is-active {
+  display: block;
+}
+
+.footer-actions {
+  margin-top: 18px;
+}

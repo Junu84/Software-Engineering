@@ -61,14 +61,11 @@
           <label for="remind-time"><strong>Remind me at:</strong></label><br />
           <input id="remind-time" type="time" />
 
-          <select id="remind-day">
-            <option value="today" selected>Today</option>
-            <option value="tomorrow">Tomorrow</option>
-          </select>
-
-          <div class="controls">
-            <button id="remind-at-btn" type="button">Set reminder</button>
-          </div>
+        <div class="controls" style="margin-top:10px;">
+          <button id="save-reminder-btn" type="button">Save daily reminder</button>
+          <button id="clear-reminder-btn" type="button">Clear</button>
+        </div>
+  
         </div>
 
         <p id="notify-status" aria-live="polite"></p>
@@ -181,14 +178,78 @@
       }
     });
 
+    //NOTIFICATIONS
     const enableBtn = document.getElementById('enable-notifications-btn');
-    const remindAtBtn = document.getElementById('remind-at-btn');
+    const saveBtn = document.getElementById('save-reminder-btn');
+    const clearBtn = document.getElementById('clear-reminder-btn');
     const remindTime = document.getElementById('remind-time');
-    const remindDay = document.getElementById('remind-day');
     const notifyStatus = document.getElementById('notify-status');
+
+    let reminderTimeoutId = null;
 
     function canNotify() {
       return 'Notification' in window;
+    }
+
+    function readSavedTime() {
+      return localStorage.getItem('lw_daily_reminder_time'); // e.g. "17:00"
+    }
+
+    function saveTime(t) {
+      localStorage.setItem('lw_daily_reminder_time', t);
+    }
+
+    function clearTime() {
+      localStorage.removeItem('lw_daily_reminder_time');
+    }
+
+    // milliseconds until the next occurrence of hh:mm
+    function msUntilNext(hh, mm) {
+      const now = new Date();
+      const target = new Date();
+      target.setSeconds(0, 0);
+      target.setHours(hh, mm, 0, 0);
+
+      // if target time already passed today, schedule for tomorrow
+      if (target.getTime() <= now.getTime()) {
+        target.setDate(target.getDate() + 1);
+      }
+
+      return target.getTime() - now.getTime();
+    }
+
+    function scheduleDailyReminder(timeStr) {
+      // clear old timeout if any
+      if (reminderTimeoutId) {
+        clearTimeout(reminderTimeoutId);
+        reminderTimeoutId = null;
+      }
+
+      if (!timeStr) return;
+
+      if (!canNotify()) {
+        notifyStatus.textContent = "Notifications are not supported in this browser.";
+        return;
+      }
+
+      if (Notification.permission !== 'granted') {
+        notifyStatus.textContent = "Please enable notifications first.";
+        return;
+      }
+
+      const [hh, mm] = timeStr.split(':').map(Number);
+      const delay = msUntilNext(hh, mm);
+
+      notifyStatus.textContent = `✅ Daily reminder set for ${timeStr}. (Next one scheduled.)`;
+
+      reminderTimeoutId = setTimeout(() => {
+        new Notification("Little Wins ✨", {
+          body: "Ready for a quick session? It only takes a few minutes 💜",
+        });
+
+        // schedule again for the next day automatically
+        scheduleDailyReminder(timeStr);
+      }, delay);
     }
 
     enableBtn.addEventListener('click', async () => {
@@ -196,61 +257,49 @@
         notifyStatus.textContent = "Notifications are not supported in this browser.";
         return;
       }
+
       const result = await Notification.requestPermission();
-      notifyStatus.textContent =
-        result === 'granted'
-          ? "✅ Notifications enabled!"
-          : "❌ Notifications blocked. You can allow them in browser settings.";
+      if (result === 'granted') {
+        notifyStatus.textContent = "✅ Notifications enabled!";
+        // if user already saved a time, schedule immediately
+        const t = readSavedTime();
+        if (t) scheduleDailyReminder(t);
+      } else {
+        notifyStatus.textContent = "❌ Notifications blocked. You can allow them in browser settings.";
+      }
     });
 
-    function msUntil(targetDate) {
-      return targetDate.getTime() - Date.now();
-    }
-
-    remindAtBtn.addEventListener('click', () => {
-      if (!canNotify()) {
-        notifyStatus.textContent = "Notifications are not supported in this browser.";
-        return;
-      }
-      if (Notification.permission !== 'granted') {
-        notifyStatus.textContent = "Please enable notifications first.";
-        return;
-      }
-
-      const timeVal = remindTime.value; // "17:00"
-      if (!timeVal) {
+    saveBtn.addEventListener('click', () => {
+      const t = remindTime.value; // "17:00"
+      if (!t) {
         notifyStatus.textContent = "Please choose a time first.";
         return;
       }
 
-      const [hh, mm] = timeVal.split(':').map(Number);
+      saveTime(t);
+      scheduleDailyReminder(t);
+    });
 
-      // Build target date
-      const target = new Date();
-      target.setSeconds(0, 0);
-      target.setHours(hh, mm, 0, 0);
+    clearBtn.addEventListener('click', () => {
+      clearTime();
+      if (reminderTimeoutId) clearTimeout(reminderTimeoutId);
+      reminderTimeoutId = null;
+      notifyStatus.textContent = "🧹 Reminder cleared.";
+    });
 
-      // If user selected tomorrow, force +1 day
-      if (remindDay.value === 'tomorrow') {
-        target.setDate(target.getDate() + 1);
-      } else {
-        // "today": if time already passed, auto-suggest tomorrow
-        if (target.getTime() <= Date.now()) {
-          notifyStatus.textContent =
-            "That time is already passed today — choose 'Tomorrow' or a later time.";
-          return;
+    // On page load: show saved time + schedule it (if possible)
+    (function initReminderUI() {
+      const saved = readSavedTime();
+      if (saved) {
+        remindTime.value = saved;
+        if (canNotify() && Notification.permission === 'granted') {
+          scheduleDailyReminder(saved);
+        } else {
+          notifyStatus.textContent = `ℹ️ Saved daily reminder time: ${saved}. Enable notifications to activate it.`;
         }
       }
+    })();
 
-      const delay = msUntil(target);
-      notifyStatus.textContent = `⏳ Okay! I’ll remind you at ${timeVal} (${remindDay.value}).`;
-
-      setTimeout(() => {
-        new Notification("Little Wins ✨", {
-          body: "Ready for a quick session? It only takes a few minutes 💜",
-        });
-      }, delay);
-    });
 
 
   </script>
