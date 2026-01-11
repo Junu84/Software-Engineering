@@ -1,217 +1,190 @@
-# 🌸 Little Wins – Meaningful Micro-Moments App
+# 🌸 Little Wins — Meaningful Micro‑Moments App
 
-Little Wins is a lightweight web application that helps users turn short waiting periods into positive and meaningful moments instead of passive doomscrolling.
-
-The app suggests short activities based on the user’s mood, intention, and available time.
+Little Wins helps users turn short waiting periods into small, positive moments instead of passive doomscrolling. The app suggests short activities based on mood, intention and available time and stores session completions & statistics.
 
 ---
 
-## 🎯 Project Goals
-- Encourage mindful and positive use of idle moments
-- Reduce unintentional doomscrolling
-- Support well-being, focus, relaxation, and social connection
-- Provide simple, enjoyable micro-activities ("little wins")
+## 🚀 Quick overview
+
+- Simple multipage frontend (HTML/CSS/JS)
+- Backend: Node.js + Express REST API
+- Persistence: SQLite (better-sqlite3)
+- Auth: JWT-based (development default; use a secure secret in production)
 
 ---
 
-## 🧩 Core Features (MVP)
-- User registration and login
-- Mode selection:
-  - Mood Booster
-  - Brain Booster
-  - Relax & Reset
-  - Kindness & Connection
-- Time selection (3, 5, 10, 15 minutes)
-- Automatic activity suggestion per session
-- Activity completion and summary
-- Session statistics (basic)
+## 🎯 Core MVP features
+
+- User registration & login (JWT)
+- Mode selection: Mood Booster, Brain Booster, Relax & Reset, Kindness & Connection
+- Duration selection: 3, 5, 10, 15 minutes
+- Single activity per session, mark done and store summary
+- 7‑day session stats + per‑mode counts
 
 ---
 
-## 🏗️ System Architecture
-The system follows a simple three-layer architecture:
-- **Web Client**: Browser-based frontend (HTML, CSS, JavaScript)
-- **Backend Server**: REST API using Node.js and Express
-- **Database**: Stores users, sessions, and activity data
-- **Optional External APIs**: Jokes, riddles, GPS, and sensor-based activities (future extensions)
+## 🧰 Tech stack
 
----
-
-## 📐 Project Documentation
-- **SRS**: Software Requirements Specification
-- **HLD**: High-Level Design including:
-  - Class Diagram
-  - Activity Diagram
-  - Sequence Diagram
-  - Use Case Diagram
-
----
-
-## 🛠️ Tech Stack (Planned)
-- Frontend: HTML, CSS, JavaScript
+- Frontend: HTML, CSS, plain JS (multipage)
 - Backend: Node.js, Express
-- Database: (to be decided, e.g. JSON / SQLite)
-- Version Control: Git & GitHub
+- DB: SQLite (better-sqlite3)
+- Auth & security: bcryptjs, jsonwebtoken
 
 ---
 
-## 👥 Team
-- Theresa Hartmann  
-- Junu Rahman  
-- Arooj Shahzadi  
+## ✅ Prerequisites
+
+- Node.js v16+ (v20 works well for development)
+- npm (comes with Node)
+- Recommended (Windows) — use PowerShell or WSL when installing native modules
+
+Note: the SQLite DB (`littlewins.db`) is not committed — every contributor will have a local copy.
 
 ---
 
-## 📅 Project Status
-The project is currently in the **early implementation phase**.  
-Initial setup and MVP features are being implemented step by step.
+## ▶️ Quick start (development)
 
----
+Run these commands from the repository root. Use one command per line.
 
-## 📄
-# Little Wins — Fullstack MVP (Node + Express + SQLite)
-
-This scaffold implements the MUST requirements of the Little Wins SRS/HLD:
-- Account registration/login/logout (JWT) — M1
-- Mode selection and duration selection — M2, M3
-- Activity selection (exactly one per session) — M4
-- Mark activity done + summary storage — M5, M6
-- Store session completions and provide 7-day statistics + per-mode counts — M7, S2
-- Multiple activities per mode (seeded) — S1
-- Responsive frontend (simple SPA) — S3
-
-Tech:
-- Node.js, Express
-- better-sqlite3 (SQLite) for persistence
-- bcryptjs for password hashing, jsonwebtoken for JWT
-
-Quick start:
-1. Ensure Node.js 16+ is installed.
-2. Install dependencies:
-   npm install
-3. Seed database and start server:
-   npm run start
-   (The server will create `littlewins.db` and seed activities if missing.)
-4. Open `frontend/index.html` in a browser (or serve it from the `frontend/` folder).
-
-Notes:
-- JWT secret currently defaults to `super-secret-dev-key` (for dev only). Use an environment variable `JWT_SECRET` for production.
-- For production, run frontend from a proper host and use HTTPS. Replace client-side JWT storage or use httpOnly cookies if needed.
-- To extend: implement external activity connectors in `backend/routes/activities.js` and isolate sensor/GPS logic server-side or client-side per HLD.
-
-🛠 Little Wins – Setup nach git pull
-
-
-✅ Voraussetzungen (wichtig)
-
-Node.js Version: v20 (LTS)
-
-❌ Node 22 / 24 funktioniert nicht zuverlässig mit SQLite
-
-Prüfen:
-
-node -v
-
-📦 Projektstruktur (relevant)
-little-wins/
-├── backend/
-│   ├── db.js        # DB + Migration-light
-│   ├── seed.js      # Activities (Upsert)
-│   ├── server.js    # Express API
-│   └── package.json
-│
-├── frontend/
-│   ├── index.html
-│   ├── home.html
-│   ├── activity.html
-│   └── config.js
-
-
-⚠️ Die SQLite-DB (littlewins.db) ist NICHT im Git
-→ jede Person hat eine eigene lokale DB.
-
-🚀 Schritt-für-Schritt Setup
-1️⃣ Backend vorbereiten
+1. Install backend deps
+```bash
 cd backend
 npm install
+```
 
-2️⃣ Activities seeden (wichtig!)
+2. Seed activities (idempotent; safe to re-run)
+```bash
 node seed.js
+# Output: "Seed finished. activities count = N"
+```
 
+3. Start backend
+```bash
+npm run start
+# Expected: "Little Wins API running on http://localhost:3000"
+```
 
-💡 seed.js verwendet UPSERT:
+4. Serve frontend (from repo root or inside `frontend/`)
+Option A — http-server (recommended):
+```bash
+cd frontend
+npx http-server ./ -p 5500
+# Open: http://127.0.0.1:5500/index.html
+```
 
-fügt neue Activities hinzu
+Option B — VS Code Live Server:
+- Right‑click `frontend/index.html` → Open with Live Server
 
-aktualisiert bestehende (z.B. activity_type)
-
-kann jederzeit erneut ausgeführt werden
-
-3️⃣ Backend starten
-npm start
-
-
-Erwartete Ausgabe:
-
-Little Wins API running on http://localhost:3000
-
-
-⚠️ Dieses Terminal offen lassen!
-Wenn es geschlossen wird, funktionieren Login & Registrierung nicht.
-
-4️⃣ Frontend starten
-
-VS Code
-
-Rechtsklick auf frontend/index.html
-
-Open with Live Server
-
-Frontend läuft z. B. unter:
-
-http://127.0.0.1:5500/frontend/index.html
-
-⚙️ config.js überprüfen
-
-Datei: frontend/config.js
-
+Important: use 127.0.0.1 for API_BASE in `frontend/config.js` (not `localhost`) to avoid ambiguous behavior in some environments:
+```js
+// frontend/config.js
 window.LW_CONFIG = {
   API_BASE: 'http://127.0.0.1:3000/api'
 };
+```
 
+---
 
-❌ kein localhost
-✅ immer 127.0.0.1
+## ⚙️ Environment variables
 
-🔐 Funktionstest
+For development a default JWT secret is used. For any deployment or shared test environment, set:
 
-Seite neu laden (Strg + F5)
+- `JWT_SECRET` — secret for signing JWTs
+- `PORT` — optional; backend reads process.env.PORT if set
 
-Registrieren oder Einloggen
+Example (PowerShell):
+```powershell
+$env:JWT_SECRET="your-dev-secret"
+$env:PORT="3001"
+npm run start
+```
 
-Nach Login erscheint:
+---
 
-Welcome back, <username>!
+## 📁 Where things live (relevant files)
 
+```
+little-wins/
+├─ backend/
+│  ├─ server.js
+│  ├─ db.js
+│  ├─ seed.js
+│  └─ package.json
+└─ frontend/
+   ├─ index.html
+   ├─ home.html
+   ├─ activity.html
+   ├─ stats.html
+   └─ config.js
+```
 
-→ ✅ Setup erfolgreich
+Archived SPA script (kept for reference):
+- `frontend/archived/app-spa-archived.js` — do not include this file in active pages.
 
-🧠 Wichtige Hinweise fürs Team
-🔹 Datenbank & Migration
+---
 
-Tabellen werden automatisch in db.js erstellt
+## 🧪 Manual testing checklist (smoke test)
 
-Neue Spalten werden per Migration-light ergänzt
+1. Start backend (see above).
+2. Serve frontend and open: http://127.0.0.1:5500/index.html
+3. Register a user (index page) → confirm `lw_token` in localStorage.
+4. Login → navigate to home → start a session (choose mode & duration).
+5. Activity page → mark it Done → verify session is saved.
+6. Open Stats → confirm sessions count and per‑mode counts reflect saved sessions.
 
-Niemand muss die DB löschen
+Watch DevTools → Network and Console for API calls and errors. Also watch the backend terminal for incoming request logs.
 
-🔹 seed.js (sehr wichtig)
+---
 
-seed.js füllt die Tabelle activities
+## 🛠 Troubleshooting
 
-darf jederzeit ausgeführt werden
+- EADDRINUSE (port 3000): another process uses the port. Either stop the process or run backend with a different `PORT`.
+- better-sqlite3 / native build errors (Windows): install Visual C++ Build Tools or use WSL for easier native module builds.
+- 401 Unauthorized: ensure backend is running and that `lw_token` exists in localStorage after login.
+- CORS issues: backend is configured for local development; if the browser blocks requests check console errors and backend logs.
 
-erzeugt keine Duplikate
+---
+
+## 🧾 Contributing & workflow
+
+- Create a feature branch `fix/...` or `feat/...`.
+- Open PR against `main`. Keep PR descriptions concise and include testing steps.
+- After merging, delete the feature branch (GitHub offers a one‑click button).
+- Keep `README.md` updated with major developer setup changes.
+
+---
+
+## ♻️ Housekeeping decisions (current repo)
+
+- The multipage frontend (index/home/activity/stats) is the canonical UI.
+- The prior SPA script has been archived at `frontend/archived/app-spa-archived.js` to avoid accidental loading.
+- Consider removing the archived file later if you are confident it won’t be reused.
+
+---
+
+## 🇩🇪 Kurzanleitung (Windows / PowerShell)
+
+1. Backend:
+```powershell
+cd backend
+npm install
+node seed.js
+npm run start
+```
+
+2. Frontend:
+```powershell
+cd frontend
+npx http-server ./ -p 5500
+# Open http://127.0.0.1:5500/index.html
+```
+
+---
+
+## 🙋‍♀️ Maintainers / Team
+- Theresa Hartmann
+- Junu Rahman
+- Arooj Shahzadi
 
 
 
