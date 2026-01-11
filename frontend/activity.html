@@ -55,6 +55,7 @@
     const addPhotoBtn = document.getElementById('add-photo-btn');
     const photoInput = document.getElementById('photo-input');
     const summaryEl = document.getElementById('summary');
+    summaryEl.classList.add('hidden');
     const summaryDetails = document.getElementById('summary-details');
 
     sessionInfo.textContent = `Mode: ${mode} • Duration: ${duration} min`;
@@ -91,7 +92,6 @@
         `<p>${currentActivity.description || ''}</p>` +
         (payload ? `<p><small><strong>Payload:</strong> ${payload}</small></p>` : '');
 
-      summaryEl.classList.add('hidden');
     }
 
     async function loadActivity(excludeId) {
@@ -105,6 +105,8 @@
         if (!r.ok) throw new Error(data.error || 'Could not load activity');
 
         currentActivity = data.activity;
+
+        summaryEl.classList.add('hidden');
 
         // IMPORTANT: payload comes as TEXT from DB, depending on your service.
         // If it arrives as a string, parse it:
@@ -122,6 +124,8 @@
 
     anotherBtn.addEventListener('click', async () => {
       if (!currentActivity) return;
+
+      summaryEl.classList.add('hidden');
       await loadActivity(currentActivity.id);
     });
 
@@ -305,6 +309,7 @@
     });
 
     backHomeBtn.addEventListener('click', () => {
+      summaryEl.classList.add('hidden');
       sessionStorage.removeItem('currentMode');
       sessionStorage.removeItem('currentDuration');
       sessionStorage.removeItem('currentActivity');

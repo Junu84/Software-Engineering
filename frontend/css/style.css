@@ -11,7 +11,7 @@
   --row-alt: #FBFAFF;
   --row-hover: #FFF0FA;
 
-  /* NEW: highlight colors (no green) */
+  /* highlight colors */
   --today-bg: #FFF0FA;
   --today-border: #F3C4E9;
   --today-text: #F15BB5;
@@ -296,3 +296,8 @@ input, select {
 .footer-actions {
   margin-top: 18px;
 }
+
+.hidden {
+  display: none !important;
+}
+
