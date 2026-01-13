@@ -8,13 +8,13 @@
     "seed": "node seed.js"
   },
   "dependencies": {
-    "better-sqlite3": "^8.3.0",
     "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^8.3.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^4.18.2",
-    "jsonwebToken": "^9.0.0",
     "jsonwebtoken": "^9.0.0",
+    "jsonwebToken": "^9.0.0",
     "morgan": "^1.10.0"
   }
-
 }

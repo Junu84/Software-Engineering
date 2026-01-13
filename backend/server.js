@@ -6,9 +6,15 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 const { getActivity } = require('./activityService');
+require('dotenv').config(); // loads backend/.env in dev (do not commit .env)
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: Missing JWT_SECRET environment variable.');
+  console.error('Set JWT_SECRET in your environment or create backend/.env from .env.example (do not commit real secrets).');
+  process.exit(1);
+}
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev-key';
 const app = express();
 app.use(cors());
 app.use(express.json());
