@@ -2,3 +2,4 @@
 backend/littlewins.db
 backend/*.db
 
+backend/.env
