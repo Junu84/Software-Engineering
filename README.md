@@ -9,7 +9,7 @@ Little Wins helps users turn short waiting periods into small, positive moments 
 - Simple multipage frontend (HTML/CSS/JS)
 - Backend: Node.js + Express REST API
 - Persistence: SQLite (better-sqlite3)
-- Auth: JWT-based (development default; use a secure secret in production)
+- Auth: JWT-based (server requires `JWT_SECRET`)
 
 ---
 
@@ -34,48 +34,97 @@ Little Wins helps users turn short waiting periods into small, positive moments 
 
 ## ✅ Prerequisites
 
-- Node.js v16+ (v20 works well for development)
-- npm (comes with Node)
-- Recommended (Windows) — use PowerShell or WSL when installing native modules
+- Node.js v16+ (v20 used in development)
+- npm (bundled with Node)
+- Recommended on Windows: use PowerShell or WSL for installing native modules (better-sqlite3)
 
-Note: the SQLite DB (`littlewins.db`) is not committed — every contributor will have a local copy.
+Note: the SQLite DB (`littlewins.db`) is not committed — each contributor will have a local copy created by the seed script.
+
+---
+
+## ⚙️ Environment variables (important)
+
+We keep example environment variables in `.env.example` at the repository root. Do NOT commit a real `.env` file.
+
+Required environment variables:
+- `JWT_SECRET` — secret used to sign JWTs. The backend will exit at startup if this is missing.
+Optional:
+- `PORT` — port for the backend (defaults to `3000` if not set)
+- `DB_PATH` — optional DB path (default `./littlewins.db`)
+
+Example `.env.example` (already present in repo root):
+```
+JWT_SECRET=super-secret-dev-key
+PORT=3000
+DB_PATH=./littlewins.db
+```
+
+Create a local `.env` for development (do not commit it):
+- PowerShell (repo root):
+```powershell
+Copy-Item .env.example backend\.env
+notepad backend\.env   # edit JWT_SECRET -> set a real dev secret, save & close
+```
+
+- Bash / WSL:
+```bash
+cp .env.example backend/.env
+$EDITOR backend/.env   # edit JWT_SECRET -> set a real dev secret, save
+```
+
+We intentionally require `JWT_SECRET` at server startup (no insecure fallback). If `JWT_SECRET` is missing the server will exit with a clear error.
 
 ---
 
 ## ▶️ Quick start (development)
 
-Run these commands from the repository root. Use one command per line.
+Run each command from the repository root (one line at a time).
 
-1. Install backend deps
+1) Install backend deps
 ```bash
 cd backend
 npm install
 ```
 
-2. Seed activities (idempotent; safe to re-run)
+2) Seed activities (creates local DB and records)
 ```bash
 node seed.js
-# Output: "Seed finished. activities count = N"
+# Expected output: "Seed finished. activities count = N"
 ```
 
-3. Start backend
-```bash
+3) Start backend
+- If you created `backend/.env` the server will load it automatically (via dotenv).
+- Or set env vars for the session:
+
+PowerShell:
+```powershell
+# session-only
+$env:JWT_SECRET = "your-dev-secret"
+$env:PORT = "3000"     # optional
 npm run start
-# Expected: "Little Wins API running on http://localhost:3000"
 ```
 
-4. Serve frontend (from repo root or inside `frontend/`)
-Option A — http-server (recommended):
+Bash / WSL:
+```bash
+export JWT_SECRET='your-dev-secret'
+export PORT=3000       # optional
+npm run start
+```
+
+Expected log: `Little Wins API running on http://localhost:3000` (or port you set).
+
+4) Serve frontend
+Option A — use http-server (recommended):
 ```bash
 cd frontend
 npx http-server ./ -p 5500
 # Open: http://127.0.0.1:5500/index.html
 ```
 
-Option B — VS Code Live Server:
+Option B — use VS Code Live Server:
 - Right‑click `frontend/index.html` → Open with Live Server
 
-Important: use 127.0.0.1 for API_BASE in `frontend/config.js` (not `localhost`) to avoid ambiguous behavior in some environments:
+Important: use `127.0.0.1` for the API base in `frontend/config.js` to avoid ambiguous behavior on certain Windows environments. Example:
 ```js
 // frontend/config.js
 window.LW_CONFIG = {
@@ -85,28 +134,35 @@ window.LW_CONFIG = {
 
 ---
 
-## ⚙️ Environment variables
+## 🧪 Acceptance / smoke tests
 
-For development a default JWT secret is used. For any deployment or shared test environment, set:
+A simple PowerShell acceptance script (`test-acceptance.ps1`) can run the register/login/fetch flows. To run it against your local backend:
 
-- `JWT_SECRET` — secret for signing JWTs
-- `PORT` — optional; backend reads process.env.PORT if set
-
-Example (PowerShell):
 ```powershell
-$env:JWT_SECRET="your-dev-secret"
-$env:PORT="3001"
-npm run start
+# Point the script to local API
+$env:API_BASE = 'http://localhost:3000/api'
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\test-acceptance.ps1
 ```
+
+If you want to run with an existing test account:
+```powershell
+$env:TEST_EMAIL='you@example.com'
+$env:TEST_PASSWORD='YourPassword'
+$env:API_BASE='http://localhost:3000/api'
+.\test-acceptance.ps1
+```
+
+If any step fails, the script output shows the failing HTTP request and error text. Useful to debug 401/403 or connection issues.
 
 ---
 
-## 📁 Where things live (relevant files)
+## 📁 Project layout
 
 ```
 little-wins/
 ├─ backend/
-│  ├─ server.js
+│  ├─ server.js       # main server (loads dotenv, requires JWT_SECRET)
 │  ├─ db.js
 │  ├─ seed.js
 │  └─ package.json
@@ -118,47 +174,46 @@ little-wins/
    └─ config.js
 ```
 
-Archived SPA script (kept for reference):
-- `frontend/archived/app-spa-archived.js` — do not include this file in active pages.
-
 ---
 
-## 🧪 Manual testing checklist (smoke test)
+## ▶️ Manual testing checklist (smoke test)
 
-1. Start backend (see above).
+1. Start backend (see Quick start).
 2. Serve frontend and open: http://127.0.0.1:5500/index.html
-3. Register a user (index page) → confirm `lw_token` in localStorage.
-4. Login → navigate to home → start a session (choose mode & duration).
-5. Activity page → mark it Done → verify session is saved.
-6. Open Stats → confirm sessions count and per‑mode counts reflect saved sessions.
+3. Register a user and confirm `lw_token` is stored in localStorage.
+4. Login, start a session, mark Done, and confirm session saved.
+5. Open Stats and verify counts.
 
-Watch DevTools → Network and Console for API calls and errors. Also watch the backend terminal for incoming request logs.
+Watch DevTools → Network and Console for API calls and errors. Also watch the backend console for request logs.
 
 ---
 
-## 🛠 Troubleshooting
+## 🛠 Troubleshooting (common issues)
 
-- EADDRINUSE (port 3000): another process uses the port. Either stop the process or run backend with a different `PORT`.
-- better-sqlite3 / native build errors (Windows): install Visual C++ Build Tools or use WSL for easier native module builds.
+- EADDRINUSE (port 3000): another process uses the port. Stop it or run backend with a different `PORT`:
+  PowerShell example: `$env:PORT=3001; npm run start`
+
 - 401 Unauthorized: ensure backend is running and that `lw_token` exists in localStorage after login.
-- CORS issues: backend is configured for local development; if the browser blocks requests check console errors and backend logs.
+
+- CORS issues: backend is configured for local development. If the browser blocks requests, check console errors and backend logs.
+
+- better-sqlite3 native build errors (Windows): install Visual C++ Build Tools or use WSL to install native dependencies.
+
+---
+
+## ♻️ Git / security notes
+
+- `.env.example` is committed to document required env vars.
+- `backend/.env` must NOT be committed. The project `.gitignore` includes `backend/.env`.
+- If you accidentally commit secrets, rotate them and remove the tracked file from repo history (ask for help if this happens).
 
 ---
 
 ## 🧾 Contributing & workflow
 
-- Create a feature branch `fix/...` or `feat/...`.
-- Open PR against `main`. Keep PR descriptions concise and include testing steps.
-- After merging, delete the feature branch (GitHub offers a one‑click button).
-- Keep `README.md` updated with major developer setup changes.
-
----
-
-## ♻️ Housekeeping decisions (current repo)
-
-- The multipage frontend (index/home/activity/stats) is the canonical UI.
-- The prior SPA script has been archived at `frontend/archived/app-spa-archived.js` to avoid accidental loading.
-- Consider removing the archived file later if you are confident it won’t be reused.
+- Create a feature branch `feat/...` or `fix/...`.
+- Open a PR against `main` and include testing steps.
+- After merge, delete the feature branch.
 
 ---
 
@@ -169,6 +224,7 @@ Watch DevTools → Network and Console for API calls and errors. Also watch the 
 cd backend
 npm install
 node seed.js
+# create backend/.env from .env.example and edit JWT_SECRET
 npm run start
 ```
 
@@ -182,12 +238,9 @@ npx http-server ./ -p 5500
 ---
 
 ## 🙋‍♀️ Maintainers / Team
+
 - Theresa Hartmann
 - Junu Rahman
 - Arooj Shahzadi
 
-
-
-
-
-
+---
