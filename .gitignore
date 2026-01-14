@@ -3,3 +3,4 @@ backend/littlewins.db
 backend/*.db
 
 backend/.env
+backend/uploads
