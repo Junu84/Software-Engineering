@@ -11,6 +11,18 @@ const ACTIVITIES = [
   { id: 'b1', mode: 'Brain Booster', title: 'One quick riddle', description: "Solve this: What has keys but can't open locks? (Answer: Piano).", duration_hints: '3,5', activity_type: 'brain' },
   { id: 'b2', mode: 'Brain Booster', title: 'Mini logic puzzle', description: 'Name 5 animals whose names start with the same letter in 2 minutes.', duration_hints: '5,10', activity_type: 'brain' },
   { id: 'b3', mode: 'Brain Booster', title: 'Memory test', description: 'Try to recall the items in the last shop you visited, list at least 6.', duration_hints: '5,10', activity_type: 'brain' },
+  {
+  id: 'joke1',
+  mode: 'Brain Booster',
+  title: 'Joke Challenge',
+  description: 'Read a joke and share it with someone nearby.',
+  duration_hints: '3,5',
+  activity_type: 'joke',
+  payload: {
+    source: 'official-joke-api'
+  }
+},
+
 
   // Sensor activity
   { id: 's2', mode: 'Mood Booster', title: 'Shake It Out', description: 'Shake your phone gently for a few seconds to release tension.', duration_hints: '3,5', activity_type: 'sensor', payload: { sensor: 'motion', goal: 'shake'}},
@@ -31,7 +43,9 @@ const ACTIVITIES = [
   
 ];
 
-function seedUpsert() {
+
+
+ function seedUpsert() {
   // SQLite UPSERT using ON CONFLICT(id) DO UPDATE
   const upsert = db.prepare(`
     INSERT INTO activities (id, mode, title, description, duration_hints, activity_type, payload)
@@ -47,6 +61,12 @@ function seedUpsert() {
 
   const tx = db.transaction((items) => {
     for (const a of items) {
+      // ✅ Ensure payload.text always exists for frontend rendering
+      const payload = {
+        text: a.description,
+        ...(a.payload || {})
+      };
+
       upsert.run(
         a.id,
         a.mode,
@@ -54,7 +74,7 @@ function seedUpsert() {
         a.description,
         a.duration_hints || '',
         a.activity_type || 'generic',
-        a.payload ? JSON.stringify(a.payload) : null
+        JSON.stringify(payload)
       );
     }
   });
@@ -64,5 +84,6 @@ function seedUpsert() {
   const count = db.prepare('SELECT COUNT(*) AS c FROM activities').get().c;
   console.log(`✅ Seed finished. activities count = ${count}`);
 }
+
 
 seedUpsert();

@@ -8,318 +8,238 @@
   <script src="/frontend/config.js"></script>
 </head>
 <body>
-  <main class="card">
-    <h1>Your Little Wins Activity</h1>
-    <p id="session-info" aria-live="polite"></p>
 
-    <section id="activity-area" class="activity" aria-live="polite">
-      <h2 id="activity-title"></h2>
-      <div id="activity-desc"></div>
-    </section>
+<main class="card">
+  <h1>Your Little Wins Activity</h1>
+  <p id="session-info"></p>
 
-    <div class="controls">
-      <button id="another-btn">Show another activity</button>
-      <button id="done-btn">Done</button>
-      <button id="back-home-btn">Back to Home</button>
+  <!-- ACTIVITY -->
+  <section id="activity-area">
+    <h2 id="activity-title"></h2>
+    <div id="activity-desc"></div>
+  </section>
+
+  <!-- CONTROLS -->
+  <div id="controls">
+    <button type="button" id="another-btn">Show another activity</button>
+    <button type="button" id="done-btn">Done</button>
+    <button type="button" id="back-home-btn">Back to Home</button>
+  </div>
+
+  <!-- SUMMARY -->
+  <section id="summary" class="hidden">
+    <h3>Well done! 🎉</h3>
+    <div id="summary-details"></div>
+
+    <h4>Add a memory photo (optional)</h4>
+
+    <!-- CAMERA -->
+    <video id="camera" autoplay playsinline style="display:none; width:100%; border-radius:8px;"></video>
+    <canvas id="snapshot" style="display:none;"></canvas>
+
+    <div style="margin-top:10px;">
+      <button type="button" id="open-camera-btn">Open Camera</button>
+      <button type="button" id="take-photo-btn" style="display:none;">Take Photo</button>
     </div>
 
-    <div id="summary" class="hidden" aria-live="polite">
-      <h3>Well done!</h3>
-      <div id="summary-details"></div>
-      <button id="add-photo-btn">Add photo (optional)</button>
-      <input id="photo-input" type="file" accept="image/*" capture="environment" class="hidden" />
-    </div>
-  </main>
+    <!-- FILE UPLOAD -->
+    <input id="photo-input" type="file" accept="image/*" style="margin-top:10px;">
 
-  <script>
-    const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';
-    const token = localStorage.getItem('lw_token');
-    if (!token) window.location.href = 'index.html';
+    <img id="photo-preview" style="display:none; max-width:100%; margin-top:10px; border-radius:8px;">
 
-    const mode = sessionStorage.getItem('currentMode');
-    const duration = sessionStorage.getItem('currentDuration');
-    let currentActivity = sessionStorage.getItem('currentActivity')
-      ? JSON.parse(sessionStorage.getItem('currentActivity'))
-      : null;
+    <button type="button" id="save-photo-btn" style="margin-top:12px;">
+      Save & Finish
+    </button>
+  </section>
+</main>
 
-    const startedAt = new Date().toISOString();
+<script>
+/* =======================
+   BASIC SETUP
+======================= */
+const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';
+const token = localStorage.getItem('lw_token');
+if (!token) location.href = 'index.html';
 
-    if (!mode || !duration) window.location.href = 'home.html';
+const mode = sessionStorage.getItem('currentMode');
+const duration = sessionStorage.getItem('currentDuration');
+if (!mode || !duration) location.href = 'home.html';
 
-    const sessionInfo = document.getElementById('session-info');
-    const titleEl = document.getElementById('activity-title');
-    const descEl = document.getElementById('activity-desc');
-    const anotherBtn = document.getElementById('another-btn');
-    const doneBtn = document.getElementById('done-btn');
-    const backHomeBtn = document.getElementById('back-home-btn');
-    const addPhotoBtn = document.getElementById('add-photo-btn');
-    const photoInput = document.getElementById('photo-input');
-    const summaryEl = document.getElementById('summary');
-    const summaryDetails = document.getElementById('summary-details');
+const startedAt = new Date().toISOString();
+let currentActivity = null;
+let finished = false;
+let photoBase64 = null;
 
-    sessionInfo.textContent = `Mode: ${mode} • Duration: ${duration} min`;
-
-    async function api(path, opts = {}) {
-      const headers = opts.headers || {};
-      headers['Content-Type'] = 'application/json';
-      headers['Authorization'] = 'Bearer ' + token;
-
-      const res = await fetch(API_BASE + path, { ...opts, headers });
-      if (res.status === 401) {
-        localStorage.removeItem('lw_token');
-        window.location.href = 'index.html';
-        throw new Error('Unauthorized');
-      }
-      return res;
+/* =======================
+   API HELPER
+======================= */
+async function api(path, opts = {}) {
+  const res = await fetch(API_BASE + path, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
     }
+  });
 
-    // Render activity (shows type and payload if available)
-    function renderActivity() {
-      if (!currentActivity) {
-        titleEl.textContent = '(No activity)';
-        descEl.textContent = '';
-        return;
-      }
+  if (res.status === 401) {
+    localStorage.clear();
+    location.href = 'index.html';
+    throw new Error('Unauthorized');
+  }
 
-      titleEl.textContent = currentActivity.title;
+  return res.json();
+}
 
-      const type = currentActivity.activity_type || 'generic';
-      const payload = currentActivity.payload ? JSON.stringify(currentActivity.payload) : null;
+/* =======================
+   UI SETUP
+======================= */
+document.getElementById('session-info').textContent =
+  `Mode: ${mode} • Duration: ${duration} min`;
 
-      descEl.innerHTML =
-        `<p><strong>Type:</strong> ${type}</p>` +
-        `<p>${currentActivity.description || ''}</p>` +
-        (payload ? `<p><small><strong>Payload:</strong> ${payload}</small></p>` : '');
+function renderActivity() {
+  if (!currentActivity) return;
+  document.getElementById('activity-title').textContent = currentActivity.title;
+  document.getElementById('activity-desc').innerHTML =
+    `<p>${currentActivity.description || ''}</p>`;
+}
 
-      summaryEl.classList.add('hidden');
-    }
+/* =======================
+   LOAD ACTIVITY
+======================= */
+async function loadActivity(excludeId) {
+  if (finished) return;
 
-    async function loadActivity(excludeId) {
-      try {
-        const q =
-          `?mode=${encodeURIComponent(mode)}&duration=${encodeURIComponent(duration)}` +
-          (excludeId ? `&excludeId=${encodeURIComponent(excludeId)}` : '');
+  const qs =
+    `?mode=${encodeURIComponent(mode)}&duration=${encodeURIComponent(duration)}` +
+    (excludeId ? `&excludeId=${excludeId}` : '');
 
-        const r = await api('/activities' + q);
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Could not load activity');
+  const data = await api('/activities' + qs);
+  if (!data.activity) {
+    alert('No activity found');
+    return;
+  }
 
-        currentActivity = data.activity;
+  currentActivity = data.activity;
+  sessionStorage.setItem('currentActivity', JSON.stringify(currentActivity));
+  renderActivity();
+}
 
-        // IMPORTANT: payload comes as TEXT from DB, depending on your service.
-        // If it arrives as a string, parse it:
-        if (currentActivity && typeof currentActivity.payload === 'string') {
-          try { currentActivity.payload = JSON.parse(currentActivity.payload); } catch {}
-        }
+/* =======================
+   COMPLETE SESSION
+======================= */
+document.getElementById('done-btn').onclick = () => {
+  if (finished) return;
+  finished = true;
 
-        sessionStorage.setItem('currentActivity', JSON.stringify(currentActivity));
-        renderActivity();
-      } catch (err) {
-        titleEl.textContent = 'Could not load activity';
-        descEl.textContent = err.message || '';
-      }
-    }
+  document.getElementById('activity-area').classList.add('hidden');
+  document.getElementById('controls').classList.add('hidden');
+  document.getElementById('summary').classList.remove('hidden');
 
-    anotherBtn.addEventListener('click', async () => {
-      if (!currentActivity) return;
-      await loadActivity(currentActivity.id);
-    });
+  document.getElementById('summary-details').innerHTML = `
+    <p><strong>Activity:</strong> ${currentActivity.title}</p>
+    <p><strong>Completed:</strong> ${new Date().toLocaleString()}</p>
+    <p>Great job 🌟</p>
+  `;
+};
 
-    // SENSOR LOGIC (isolated) — this is S6
-    async function runSensorIfNeeded() {
-      if (!currentActivity || currentActivity.activity_type !== 'sensor') return null;
+/* =======================
+   PHOTO (UPLOAD)
+======================= */
+const input = document.getElementById('photo-input');
+const preview = document.getElementById('photo-preview');
 
-      const payload = currentActivity.payload || {};
+input.addEventListener('change', () => {
+  const file = input.files[0];
+  if (!file) return;
 
-      // 1) Motion (shake)
-      if (payload.sensor === 'motion') {
-        return new Promise(resolve => {
-          let gotEvent = false;
+  const reader = new FileReader();
+  reader.onload = () => {
+    photoBase64 = reader.result;
+    preview.src = photoBase64;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
 
-          function handler(e) {
-            gotEvent = true;
-            window.removeEventListener('devicemotion', handler);
+/* =======================
+   PHOTO (CAMERA)
+======================= */
+const video = document.getElementById('camera');
+const canvas = document.getElementById('snapshot');
+const openCamBtn = document.getElementById('open-camera-btn');
+const takeBtn = document.getElementById('take-photo-btn');
 
-            resolve({
-              sensor: 'motion',
-              acceleration: e.accelerationIncludingGravity || null,
-              message: 'Motion detected ✅'
-            });
-          }
+openCamBtn.onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  video.srcObject = stream;
+  video.style.display = 'block';
+  takeBtn.style.display = 'inline-block';
+};
 
-          window.addEventListener('devicemotion', handler, { once: true });
+takeBtn.onclick = () => {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
 
-          setTimeout(() => {
-            if (!gotEvent) resolve({ sensor: 'motion', message: 'No motion data (maybe desktop / blocked)' });
-          }, 3000);
-        });
-      }
+  photoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+  preview.src = photoBase64;
+  preview.style.display = 'block';
 
-      // 2) Geolocation (GPS)
-      if (payload.sensor === 'geolocation') {
-        if (!navigator.geolocation) {
-          return { sensor: 'geolocation', message: 'Geolocation not supported in this browser' };
-        }
+  video.srcObject.getTracks().forEach(t => t.stop());
+  video.style.display = 'none';
+  takeBtn.style.display = 'none';
+};
 
-        return new Promise(resolve => {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              resolve({
-                sensor: 'geolocation',
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                accuracy: pos.coords.accuracy,
-                message: 'Location captured ✅'
-              });
-            },
-            (err) => {
-              resolve({
-                sensor: 'geolocation',
-                message: 'Location blocked / not available',
-                error: err.message
-              });
-            },
-            {
-              enableHighAccuracy: payload.accuracy === 'high',
-              timeout: 8000,
-              maximumAge: 0
-            }
-          );
-        });
-      }
+/* =======================
+   SAVE SESSION
+======================= */
+document.getElementById('save-photo-btn').onclick = async () => {
+  if (!finished) return;
 
-      return { message: 'Unknown sensor type' };
-    }
+  const completedAt = new Date().toISOString();
 
-    // Done = runs sensor if needed + sends sensorResult to backend
-    doneBtn.addEventListener('click', async () => {
-      if (!currentActivity) return;
+  await api('/sessions', {
+    method: 'POST',
+    body: JSON.stringify({
+      mode,
+      duration: Number(duration),
+      activityId: currentActivity.id,
+      activityTitle: currentActivity.title,
+      startedAt,
+      completedAt,
+      photo: photoBase64 || null
+    })
+  });
 
-      const completedAt = new Date().toISOString();
+  sessionStorage.clear();
+  location.href = 'home.html';
+};
 
-      const sensorResult = await runSensorIfNeeded();
+/* =======================
+   NAV BUTTONS
+======================= */
+document.getElementById('another-btn').onclick = () =>
+  loadActivity(currentActivity?.id);
 
-      const payload = {
-        mode,
-        duration: Number(duration),
-        activityId: currentActivity.id,
-        activityTitle: currentActivity.title,
-        startedAt,
-        completedAt,
-        sensorResult
-      };
+document.getElementById('back-home-btn').onclick = () => {
+  sessionStorage.clear();
+  location.href = 'home.html';
+};
 
-      try {
-        const r = await api('/sessions', { method: 'POST', body: JSON.stringify(payload) });
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || 'Failed to save session');
-        showSummary(data.session, sensorResult);
-      } catch (err) {
-        alert('Could not save session: ' + (err.message || ''));
-      }
-    });
+/* =======================
+   INIT
+======================= */
+(async () => {
+  const stored = sessionStorage.getItem('currentActivity');
+  if (stored) {
+    currentActivity = JSON.parse(stored);
+    renderActivity();
+  } else {
+    await loadActivity();
+  }
+})();
+</script>
 
-    function showSummary(session, sensorResult) {
-      summaryEl.classList.remove('hidden');
-      summaryDetails.innerHTML = '';
-
-      const p1 = document.createElement('p');
-      p1.textContent = `Mode: ${session.mode} • Duration: ${session.duration} min`;
-
-      const p2 = document.createElement('p');
-      p2.textContent = `Activity: ${session.activity_title || session.activityTitle || ''}`;
-
-      const p3 = document.createElement('p');
-      p3.textContent = `Completed: ${new Date(session.completed_at).toLocaleString()}`;
-
-      summaryDetails.appendChild(p1);
-      summaryDetails.appendChild(p2);
-      summaryDetails.appendChild(p3);
-
-      // show sensor result if we have one
-      if (sensorResult) {
-        const pre = document.createElement('pre');
-        pre.style.whiteSpace = 'pre-wrap';
-        pre.textContent = 'Sensor result:\n' + JSON.stringify(sensorResult, null, 2);
-        summaryDetails.appendChild(pre);
-      }
-
-      // Motivational message
-      const messages = [
-        "Great job! 🌟",
-        "Every little win counts 💜",
-        "You did something good for yourself!",
-        "Well done — keep going 💪"
-      ];
-      const msg = messages[Math.floor(Math.random() * messages.length)];
-      const p4 = document.createElement('p');
-      p4.textContent = msg;
-      summaryDetails.appendChild(p4);
-
-      // show photo if exists
-      if (session.photo) {
-        const img = document.createElement('img');
-        img.src = session.photo;
-        img.style.maxWidth = '100%';
-        summaryDetails.appendChild(img);
-      }
-
-      if (session.id) localStorage.setItem('lw_lastSessionId', session.id);
-    }
-
-    addPhotoBtn.addEventListener('click', () => photoInput.click());
-
-    photoInput.addEventListener('change', async (e) => {
-      const f = e.target.files && e.target.files[0];
-      if (!f || !currentActivity) return;
-
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const dataUrl = ev.target.result;
-        const completedAt = new Date().toISOString();
-
-        const sensorResult = await runSensorIfNeeded();
-
-        const payload = {
-          mode,
-          duration: Number(duration),
-          activityId: currentActivity.id,
-          activityTitle: currentActivity.title,
-          startedAt,
-          completedAt,
-          photo: dataUrl,
-          sensorResult
-        };
-
-        try {
-          const r = await api('/sessions', { method: 'POST', body: JSON.stringify(payload) });
-          const data = await r.json();
-          if (!r.ok) throw new Error(data.error || 'Could not save session with photo');
-          showSummary(data.session, sensorResult);
-        } catch (err) {
-          alert('Could not save session with photo');
-        }
-      };
-
-      reader.readAsDataURL(f);
-    });
-
-    backHomeBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('currentMode');
-      sessionStorage.removeItem('currentDuration');
-      sessionStorage.removeItem('currentActivity');
-      window.location.href = 'home.html';
-    });
-
-    if (currentActivity) {
-      // payload might be string from storage → parse it
-      if (typeof currentActivity.payload === 'string') {
-        try { currentActivity.payload = JSON.parse(currentActivity.payload); } catch {}
-      }
-      renderActivity();
-    } else {
-      loadActivity().catch(() => {});
-    }
-  </script>
 </body>
 </html>

@@ -8,6 +8,7 @@ const db = require('./db');
 const { getActivity } = require('./activityService');
 
 
+
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev-key';
 const app = express();
 app.use(cors());
@@ -67,29 +68,32 @@ app.post('/api/register', async (req, res) => {
   res.json({ token, user });
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', (req, res) => {
   const { identity, password } = req.body;
-  if (!identity || !password) return res.status(400).json({ error: 'Missing fields' });
 
-  const user = db
-    .prepare('SELECT id, email, username, password_hash FROM users WHERE email = ? OR username = ?')
-    .get(identity.toLowerCase(), identity);
+  if (!identity || !password) {
+    return res.status(400).json({ error: 'Missing credentials' });
+  }
 
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  const user = db.prepare(`
+    SELECT * FROM users
+    WHERE username = ? OR email = ?
+  `).get(identity, identity.toLowerCase());
 
-  const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
 
-  const u = { id: user.id, email: user.email, username: user.username };
-  const token = createToken(u);
-  res.json({ token, user: u });
+  const ok = bcrypt.compareSync(password, user.password_hash);
+  if (!ok) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const token = createToken(user);
+  res.json({ token });
 });
 
-app.get('/api/me', authMiddleware, (req, res) => {
-  const u = db.prepare('SELECT id, email, username FROM users WHERE id = ?').get(req.user.id);
-  if (!u) return res.status(404).json({ error: 'User not found' });
-  res.json({ user: u });
-});
+
 
 // Activities selection (S5: delegated to activityService)
 app.get('/api/activities', authMiddleware, (req, res) => {
@@ -151,6 +155,47 @@ app.post('/api/sessions', authMiddleware, (req, res) => {
   const session = db.prepare('SELECT * FROM sessions WHERE id = ?').get(info.lastInsertRowid);
   res.json({ session });
 });
+
+
+// Gallery: return sessions with photos for current user
+app.get('/api/sessions/gallery', authMiddleware, (req, res) => {
+  const rows = db.prepare(`
+    SELECT id, mode, activity_title, completed_at, photo
+    FROM sessions
+    WHERE user_id = ?
+      AND photo IS NOT NULL
+    ORDER BY completed_at DESC
+  `).all(req.user.id);
+
+  res.json({ items: rows });
+});
+
+
+
+
+/*
+// Get memory gallery (photos only)
+app.get('/api/sessions/gallery', authenticateToken, (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT id, photo, activity_title, completed_at
+      FROM sessions
+      WHERE user_id = ?
+        AND photo IS NOT NULL
+      ORDER BY completed_at DESC
+    `).all(req.user.id);
+
+    res.json({ photos: rows });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not load gallery' });
+  }
+    
+});
+
+*/
+
+
+
 
 // Stats: last 7 days counts and mode distribution for current user
 app.get('/api/sessions/stats', authMiddleware, (req, res) => {

@@ -32,54 +32,90 @@
   </main>
 
   <script>
-    // API base (adjust port if needed)
-    const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';;
+  // API base
+  const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';
 
-    function setToken(token) { localStorage.setItem('lw_token', token); }
-    function clearToken() { localStorage.removeItem('lw_token'); }
+  function setToken(token) {
+    localStorage.setItem('lw_token', token);
+    
+  }
 
-    async function callApi(path, opts = {}) {
-      const headers = opts.headers || {};
-      headers['Content-Type'] = 'application/json';
-      const res = await fetch(API_BASE + path, { ...opts, headers });
-      return res;
+  async function callApi(path, opts = {}) {
+    const headers = opts.headers || {};
+    headers['Content-Type'] = 'application/json';
+    const res = await fetch(API_BASE + path, { ...opts, headers });
+    return res;
+  }
+
+  /* =========================
+     REGISTER
+  ========================= */
+  document.getElementById('reg-btn').addEventListener('click', async () => {
+    const email = document.getElementById('reg-email').value.trim();
+    const username = document.getElementById('reg-username').value.trim();
+    const password = document.getElementById('reg-password').value;
+
+    if (!email || !username || !password) {
+      return alert('Fill all fields');
     }
 
-    document.getElementById('reg-btn').addEventListener('click', async () => {
-      const email = document.getElementById('reg-email').value.trim();
-      const username = document.getElementById('reg-username').value.trim();
-      const password = document.getElementById('reg-password').value;
-      if (!email || !username || !password) return alert('Fill all fields');
-      try {
-        const r = await callApi('/register', { method: 'POST', body: JSON.stringify({ email, username, password }) });
-        const data = await r.json();
-        if (!r.ok) return alert(data.error || 'Registration failed');
-        setToken(data.token);
-        // optional: store username
-        localStorage.setItem('lw_username', data.user.username || username);
-        window.location.href = 'home.html';
-      } catch (err) {
-        console.error(err);
-        alert('Registration error');
-      }
-    });
+    try {
+      const r = await callApi('/register', {
+        method: 'POST',
+        body: JSON.stringify({ email, username, password })
+      });
 
-    document.getElementById('login-btn').addEventListener('click', async () => {
+      const data = await r.json();
+      if (!r.ok) return alert(data.error || 'Registration failed');
+
+      setToken(data.token);
+      localStorage.setItem('lw_username', data.user.username);
+      window.location.href = 'home.html';
+
+    } catch (err) {
+      console.error(err);
+      alert('Registration error');
+    }
+  });
+
+  /* =========================
+     LOGIN (✅ FIXED)
+  ========================= */
+  document.getElementById('login-btn').addEventListener('click', async () => {
+    try {
       const identity = document.getElementById('login-identity').value.trim();
       const password = document.getElementById('login-password').value;
-      if (!identity || !password) return alert('Fill all fields');
-      try {
-        const r = await callApi('/login', { method: 'POST', body: JSON.stringify({ identity, password }) });
-        const data = await r.json();
-        if (!r.ok) return alert(data.error || 'Login failed');
-        setToken(data.token);
-        localStorage.setItem('lw_username', data.user.username || identity);
-        window.location.href = 'home.html';
-      } catch (err) {
-        console.error(err);
-        alert('Login error');
+
+      if (!identity || !password) {
+        return alert('Please enter email/username and password');
       }
-    });
-  </script>
+
+      const res = await fetch(API_BASE + '/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identity,   // ✅ username OR email
+          password
+        })
+      });
+
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('application/json')) {
+        throw new Error('Backend returned non-JSON');
+      }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+
+      setToken(data.token);
+      window.location.href = 'home.html';
+
+    } catch (err) {
+      console.error(err);
+      alert('Login error');
+    }
+  });
+</script>
+
 </body>
 </html>

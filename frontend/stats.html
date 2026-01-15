@@ -5,7 +5,7 @@
   <title>Little Wins — Stats</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="css/style.css">
-  <script src="config.js"></script>
+  <script src="/frontend/home.html"></script>
 </head>
 <body>
   <main class="card">
@@ -36,12 +36,23 @@
       <tbody></tbody>
     </table>
 
+
+
+    <h2>Memory Gallery</h2>
+<div id="gallery" class="gallery"></div>
+
+
+
+
+
     <div class="controls">
       <button id="back-home-btn">Back to Home</button>
     </div>
   </main>
 
   <script>
+    console.log('✅ stats.js loaded');
+    
     const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';
     const token = localStorage.getItem('lw_token');
     if (!token) window.location.href = 'index.html';
@@ -120,6 +131,12 @@
 
 
     async function loadStats() {
+
+      // Load memory gallery
+        const gr = await api('/sessions/gallery');
+        const gdata = await gr.json();
+        renderGallery(gdata.photos || []);
+
         try {
             const r = await api('/sessions/stats');
             const data = await r.json();
@@ -148,11 +165,92 @@
     }
 
 
+
+
+    
+
     document.getElementById('back-home-btn').addEventListener('click', () => {
-      window.location.href = 'home.html';
+     window.location.href = window.location.origin + '/frontend/home.html';
+
     });
 
+    const g = await api('/sessions/gallery');
+const gData = await g.json();
+renderGallery(gData.items || []);
+
+
     loadStats();
+
+
+    function renderGallery(items) {
+  const gallery = document.getElementById('gallery');
+  gallery.innerHTML = '';
+
+  if (!items.length) {
+    gallery.textContent = 'No memories yet — add photos to your sessions ✨';
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'gallery-item';
+
+    const img = document.createElement('img');
+    img.src = item.photo;
+    img.alt = item.activity_title;
+
+    const caption = document.createElement('p');
+    caption.textContent =
+      `${item.activity_title} • ${new Date(item.completed_at).toLocaleDateString()}`;
+
+    card.appendChild(img);
+    card.appendChild(caption);
+    gallery.appendChild(card);
+  });
+}
+document.getElementById('back-home-btn').addEventListener('click', () => {
+    window.location.href = '/frontend/home.html';
+  });
+
+function renderGallery(photos) {
+  const gallery = document.getElementById('gallery');
+  gallery.innerHTML = '';
+
+  if (!photos.length) {
+    gallery.innerHTML = '<p>No memories yet ✨</p>';
+    return;
+  }
+
+  photos.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'gallery-item';
+
+    const img = document.createElement('img');
+    img.src = p.photo;
+    img.alt = p.activity_title || 'Memory';
+
+    const caption = document.createElement('p');
+    caption.textContent =
+      `${p.activity_title || ''} · ${new Date(p.completed_at).toLocaleDateString()}`;
+
+    div.appendChild(img);
+    div.appendChild(caption);
+    gallery.appendChild(div);
+  });
+}
+
+
+
+
+
   </script>
+  <script>
+  document.getElementById('back-home-btn').onclick = () => {
+    sessionStorage.clear();
+    window.location.href = '/frontend/home.html';
+  };
+</script>
+
+
 </body>
 </html>

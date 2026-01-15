@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Little Wins — Gallery</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="css/style.css">
+  <script src="/frontend/config.js"></script>
+</head>
+<body>
+
+<main class="card">
+  <h1>Your Little Wins Gallery</h1>
+  <p>Moments you captured during your sessions 💜</p>
+
+  <div id="gallery"></div>
+
+  <button id="back-btn">Back to Home</button>
+</main>
+
+<script>
+const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';
+const token = localStorage.getItem('lw_token');
+if (!token) location.href = 'index.html';
+
+async function api(path) {
+  const res = await fetch(API_BASE + path, {
+    headers: {
+      'Authorization': 'Bearer ' + token
+    }
+  });
+  return res.json();
+}
+
+async function loadGallery() {
+  const data = await api('/sessions/gallery');
+  const container = document.getElementById('gallery');
+
+  if (!data.items || data.items.length === 0) {
+    container.innerHTML = '<p>No memories yet 🌱</p>';
+    return;
+  }
+
+  data.items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'gallery-item';
+
+    card.innerHTML = `
+      <img src="${item.photo}" alt="Memory photo">
+      <p><strong>${item.activity_title}</strong></p>
+      <small>${new Date(item.completed_at).toLocaleString()}</small>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+document.getElementById('back-btn').onclick = () => {
+  location.href = 'home.html';
+};
+
+loadGallery();
+</script>
+
+</body>
+</html>

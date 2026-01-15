@@ -296,3 +296,123 @@ input, select {
 .footer-actions {
   margin-top: 18px;
 }
+/* =========================
+   S3 – Responsive Layout
+   ========================= */
+
+/* Base improvements */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.card {
+  max-width: 700px;
+  margin: 1.5rem auto;
+  padding: 1.5rem;
+}
+
+/* Tables */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.table th,
+.table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.table th {
+  background: #f6f6f6;
+  font-weight: 600;
+}
+
+.table tr.is-today td {
+  font-weight: 600;
+  background: #fff6e5;
+}
+
+/* Headings spacing */
+h1, h2 {
+  margin-top: 1.2rem;
+}
+
+/* Buttons */
+.controls button {
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+/* =========================
+   Mobile adjustments
+   ========================= */
+@media (max-width: 600px) {
+  .card {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  h2 {
+    font-size: 1.1rem;
+  }
+
+  /* Make tables scrollable on small screens */
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .controls button {
+    width: 100%;
+  }
+}
+
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.gallery-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.gallery-item p {
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+.hidden {
+  display: none !important;
+}
+.gallery-item {
+  margin-top: 16px;
+}
+
+.gallery-item img {
+  width: 100%;
+  max-width: 300px;
+  border-radius: 12px;
+  display: block;
+}
