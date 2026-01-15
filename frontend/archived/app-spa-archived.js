@@ -44,7 +44,17 @@ let currentActivity = null;
 let currentSession = null;
 
 function showAuth(){ authSection.classList.remove('hidden'); homeSection.classList.add('hidden'); statsSection.classList.add('hidden'); navLogout.classList.add('hidden'); }
-function showHome(){ authSection.classList.add('hidden'); homeSection.classList.remove('hidden'); statsSection.classList.add('hidden'); navLogout.classList.remove('hidden'); }
+function showHome(){
+  authSection.classList.add('hidden');
+  homeSection.classList.remove('hidden');
+  statsSection.classList.add('hidden');
+  navLogout.classList.remove('hidden');
+
+  // ensure overlays are not visible
+  activityEl.classList.add('hidden');
+  summaryEl.classList.add('hidden');
+}
+
 function showStats(){ authSection.classList.add('hidden'); homeSection.classList.add('hidden'); statsSection.classList.remove('hidden'); navLogout.classList.remove('hidden'); }
 
 function logoutUI(){ clearToken(); showAuth(); }
@@ -93,14 +103,34 @@ startBtn.addEventListener('click', async (e)=>{
   currentActivity = res.activity;
   currentSession = { mode, duration, activityId: currentActivity.id, activityTitle: currentActivity.title, startedAt: new Date().toISOString() };
   showActivity();
+
+    // Reset old summary before showing a new activity
+  summaryEl.classList.add('hidden');
+  summaryDetails.innerHTML = '';
+  photoInput.value = ''; // optional: reset file input
+
 });
 
 function showActivity(){
   activityMode.textContent = `${currentSession.mode} — ${currentSession.duration} min`;
-  activityCard.innerHTML = `<strong>${currentActivity.title}</strong><p>${currentActivity.description}</p>`;
+
+  const type = currentActivity.activity_type || 'generic';
+  const payload = currentActivity.payload ? JSON.stringify(currentActivity.payload) : null;
+
+  activityCard.innerHTML = `
+    <strong>${currentActivity.title}</strong>
+    <p><strong>Type:</strong> ${type}</p>
+    <p>${currentActivity.description || ''}</p>
+    ${payload ? `<p><small><strong>Payload:</strong> ${payload}</small></p>` : ''}
+  `;
+
   activityEl.classList.remove('hidden');
+
+  // hide summary always when showing activity
   summaryEl.classList.add('hidden');
+  summaryDetails.innerHTML = '';
 }
+
 
 anotherBtn.addEventListener('click', async ()=>{
   if (!currentSession) return;
@@ -120,21 +150,72 @@ doneBtn.addEventListener('click', async ()=>{
 });
 
 function showSummary(session){
+  // hide activity view, show summary view
   activityEl.classList.add('hidden');
   summaryEl.classList.remove('hidden');
+
   summaryDetails.innerHTML = '';
-  const p1 = document.createElement('p'); p1.textContent = `Mode: ${session.mode} • Duration: ${session.duration} min`;
-  const p2 = document.createElement('p'); p2.textContent = `Activity: ${session.activity_title}`;
-  const p3 = document.createElement('p'); p3.textContent = `Completed: ${new Date(session.completed_at).toLocaleString()}`;
-  summaryDetails.appendChild(p1); summaryDetails.appendChild(p2); summaryDetails.appendChild(p3);
+
+  // Basic info
+  const p1 = document.createElement('p');
+  p1.textContent = `Mode: ${session.mode} • Duration: ${session.duration} min`;
+
+  const p2 = document.createElement('p');
+  p2.textContent = `Activity: ${session.activity_title || currentActivity?.title || ''}`;
+
+  const p3 = document.createElement('p');
+  p3.textContent = `Completed: ${new Date(session.completed_at).toLocaleString()}`;
+
+  summaryDetails.appendChild(p1);
+  summaryDetails.appendChild(p2);
+  summaryDetails.appendChild(p3);
+
+  // Activity details from currentActivity
+  const type = currentActivity?.activity_type || 'generic';
+  const payload = currentActivity?.payload || null;
+
+  const pType = document.createElement('p');
+  pType.textContent = `Type: ${type}`;
+  summaryDetails.appendChild(pType);
+
+  if (payload) {
+    const prePayload = document.createElement('pre');
+    prePayload.style.whiteSpace = 'pre-wrap';
+    prePayload.textContent = 'Payload:\n' + JSON.stringify(payload, null, 2);
+    summaryDetails.appendChild(prePayload);
+  }
+
+  // If backend returned sensor_result (optional)
+  if (session.sensor_result) {
+    let sr = session.sensor_result;
+    if (typeof sr === 'string') {
+      try { sr = JSON.parse(sr); } catch {}
+    }
+    const preSR = document.createElement('pre');
+    preSR.style.whiteSpace = 'pre-wrap';
+    preSR.textContent = 'Sensor result:\n' + JSON.stringify(sr, null, 2);
+    summaryDetails.appendChild(preSR);
+  }
+
+  // Photo if exists
   if (session.photo) {
-    const img = document.createElement('img'); img.src = session.photo; img.style.maxWidth='100%';
+    const img = document.createElement('img');
+    img.src = session.photo;
+    img.style.maxWidth='100%';
+    img.style.borderRadius='12px';
+    img.style.marginTop='10px';
     summaryDetails.appendChild(img);
   }
+
+  // Motivational message (NOT green)
   const msg = ['Nice! A little win adds up.','Great job — celebrate the moment!'][Math.floor(Math.random()*2)];
-  const pm = document.createElement('p'); pm.style.color='#10b981'; pm.textContent = msg;
+  const pm = document.createElement('p');
+  pm.textContent = msg;
+  pm.style.fontWeight = '600';
+  pm.style.color = '#9B5DE5'; // purple instead of green
   summaryDetails.appendChild(pm);
 }
+
 
 photoBtn.addEventListener('click', ()=> photoInput.click());
 

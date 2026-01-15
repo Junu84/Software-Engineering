@@ -5,7 +5,7 @@
   <title>Little Wins — Activity</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="css/style.css">
-  <script src="/frontend/config.js"></script>
+  <script src="config.js"></script>
 </head>
 <body>
 
@@ -65,10 +65,24 @@ const mode = sessionStorage.getItem('currentMode');
 const duration = sessionStorage.getItem('currentDuration');
 if (!mode || !duration) location.href = 'home.html';
 
+<<<<<<< HEAD
 const startedAt = new Date().toISOString();
 let currentActivity = null;
 let finished = false;
 let photoBase64 = null;
+=======
+    const sessionInfo = document.getElementById('session-info');
+    const titleEl = document.getElementById('activity-title');
+    const descEl = document.getElementById('activity-desc');
+    const anotherBtn = document.getElementById('another-btn');
+    const doneBtn = document.getElementById('done-btn');
+    const backHomeBtn = document.getElementById('back-home-btn');
+    const addPhotoBtn = document.getElementById('add-photo-btn');
+    const photoInput = document.getElementById('photo-input');
+    const summaryEl = document.getElementById('summary');
+    summaryEl.classList.add('hidden');
+    const summaryDetails = document.getElementById('summary-details');
+>>>>>>> 517e5f0d1088e15bee0d223420373f571158bf90
 
 /* =======================
    API HELPER

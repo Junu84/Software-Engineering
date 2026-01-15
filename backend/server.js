@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 const { getActivity } = require('./activityService');
+require('dotenv').config(); // loads backend/.env in dev (do not commit .env)
+
 
 
 

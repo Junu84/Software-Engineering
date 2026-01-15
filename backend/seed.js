@@ -39,8 +39,6 @@ const ACTIVITIES = [
   { id: 'k1', mode: 'Kindness & Connection', title: 'Compliment someone', description: 'Give a genuine compliment to a person nearby or send one via message.', duration_hints: '3,5', activity_type: 'kindness' },
   { id: 'k2', mode: 'Kindness & Connection', title: 'Tiny favor', description: 'Do one small helpful thing for someone (hold a door, offer directions).', duration_hints: '3,5,10', activity_type: 'kindness' },
   { id: 'k3', mode: 'Kindness & Connection', title: 'Reflect & reach out', description: "Text someone: 'I thought of you — hope you're well.'", duration_hints: '3,5', activity_type: 'kindness' },
-
-  
 ];
 
 
@@ -82,7 +80,7 @@ const ACTIVITIES = [
   tx(ACTIVITIES);
 
   const count = db.prepare('SELECT COUNT(*) AS c FROM activities').get().c;
-  console.log(`✅ Seed finished. activities count = ${count}`);
+  console.log(`Seed finished. activities count = ${count}`);
 }
 
 
