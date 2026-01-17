@@ -11,10 +11,18 @@ require('dotenv').config(); // loads backend/.env in dev (do not commit .env)
 
 
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-dev-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: Missing JWT_SECRET environment variable.');
+  console.error('Create backend/.env from .env.example and set JWT_SECRET.');
+  process.exit(1);
+}
+
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 app.use(morgan('dev'));
 
 // Helper: create token
@@ -70,32 +78,29 @@ app.post('/api/register', async (req, res) => {
   res.json({ token, user });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { identity, password } = req.body;
+  if (!identity || !password) return res.status(400).json({ error: 'Missing fields' });
 
-  if (!identity || !password) {
-    return res.status(400).json({ error: 'Missing credentials' });
-  }
+  const user = db
+    .prepare('SELECT id, email, username, password_hash FROM users WHERE email = ? OR username = ?')
+    .get(identity.toLowerCase(), identity);
 
-  const user = db.prepare(`
-    SELECT * FROM users
-    WHERE username = ? OR email = ?
-  `).get(identity, identity.toLowerCase());
+  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
+  const ok = await bcrypt.compare(password, user.password_hash);
+  if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
-  const ok = bcrypt.compareSync(password, user.password_hash);
-  if (!ok) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
-
-  const token = createToken(user);
-  res.json({ token });
+  const u = { id: user.id, email: user.email, username: user.username };
+  const token = createToken(u);
+  res.json({ token, user: u });
 });
 
-
+app.get('/api/me', authMiddleware, (req, res) => {
+  const u = db.prepare('SELECT id, email, username FROM users WHERE id = ?').get(req.user.id);
+  if (!u) return res.status(404).json({ error: 'User not found' });
+  res.json({ user: u });
+});
 
 // Activities selection (S5: delegated to activityService)
 app.get('/api/activities', authMiddleware, (req, res) => {
