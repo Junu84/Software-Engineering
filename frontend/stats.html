@@ -51,204 +51,142 @@
   </main>
 
   <script>
-    console.log('✅ stats.js loaded');
-    
-    const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';
-    const token = localStorage.getItem('lw_token');
-    if (!token) window.location.href = 'index.html';
+  console.log('✅ stats.js loaded');
 
-    async function api(path, opts = {}) {
-      const headers = opts.headers || {};
-      headers['Content-Type'] = 'application/json';
-      headers['Authorization'] = 'Bearer ' + token;
-      const res = await fetch(API_BASE + path, { ...opts, headers });
-      if (res.status === 401) {
-        localStorage.removeItem('lw_token');
-        window.location.href = 'index.html';
-        throw new Error('Unauthorized');
-      }
-      return res;
+  const API_BASE = window.LW_CONFIG?.API_BASE || 'http://localhost:3000/api';
+  const token = localStorage.getItem('lw_token');
+  if (!token) window.location.href = 'index.html';
+
+  async function api(path, opts = {}) {
+    const headers = opts.headers || {};
+    headers['Content-Type'] = 'application/json';
+    headers['Authorization'] = 'Bearer ' + token;
+
+    const res = await fetch(API_BASE + path, { ...opts, headers });
+
+    if (res.status === 401) {
+      localStorage.removeItem('lw_token');
+      window.location.href = 'index.html';
+      throw new Error('Unauthorized');
     }
+    return res;
+  }
 
-    function renderDays(days) {
-        const tbody = document.querySelector('#days-table tbody');
-        tbody.innerHTML = '';
+  function renderDays(days) {
+    const tbody = document.querySelector('#days-table tbody');
+    tbody.innerHTML = '';
 
-        const todayKey = new Date().toISOString().slice(0, 10);
+    const todayKey = new Date().toISOString().slice(0, 10);
 
-        days.forEach(d => {
-            const tr = document.createElement('tr');
+    days.forEach(d => {
+      const tr = document.createElement('tr');
 
-            const dayKey = d.key || (d.date ? String(d.date).slice(0,10) : '');
-            if (dayKey === todayKey) tr.classList.add('is-today');
+      const dayKey = d.key || '';
+      if (dayKey === todayKey) tr.classList.add('is-today');
 
+      const tdDate = document.createElement('td');
+      tdDate.textContent = d.label || d.key;
 
-            const tdDate = document.createElement('td');
-            tdDate.textContent = d.label || d.key;
+      const tdCount = document.createElement('td');
+      tdCount.textContent = d.count;
 
-            const tdCount = document.createElement('td');
-            tdCount.textContent = d.count;
-
-            tr.appendChild(tdDate);
-            tr.appendChild(tdCount);
-            tbody.appendChild(tr);
-        });
-    }
-
-
-    function renderModes(modeCounts) {
-      const tbody = document.querySelector('#modes-table tbody');
-      tbody.innerHTML = '';
-
-      Object.entries(modeCounts).forEach(([mode, count]) => {
-        const tr = document.createElement('tr');
-
-        const tdMode = document.createElement('td');
-        tdMode.textContent = mode;
-
-        const tdCount = document.createElement('td');
-        tdCount.textContent = count;
-
-        tr.appendChild(tdMode);
-        tr.appendChild(tdCount);
-        tbody.appendChild(tr);
-      });
-    }
-
-    function calculateStreak(days) {
-        let streak = 0;
-
-        // days are ordered from oldest → newest
-        for (let i = days.length - 1; i >= 0; i--) {
-            if (days[i].count > 0) {
-                streak++;
-            } else {
-            break;
-            }
-        }
-        return streak;
-    }
-
-
-    async function loadStats() {
-
-      // Load memory gallery
-        const gr = await api('/sessions/gallery');
-        const gdata = await gr.json();
-        renderGallery(gdata.photos || []);
-
-        try {
-            const r = await api('/sessions/stats');
-            const data = await r.json();
-            if (!r.ok) throw new Error(data.error || 'Could not load stats');
-
-            document.getElementById('stats-summary').textContent =
-                `Total completed sessions: ${data.total}`;
-
-            renderDays(data.days || []);
-            renderModes(data.modeCounts || {});
-
-            // 🔥 streak logic
-            const streak = calculateStreak(data.days || []);
-            const streakEl = document.getElementById('stats-streak');
-
-            if (streak > 0) {
-                streakEl.textContent = `Streak: ${streak} day${streak === 1 ? '' : 's'} 🔥 Keep it going!`;
-            } else {
-                streakEl.textContent = 'No current streak yet — start one today ✨';
-            }
-
-        } catch (err) {
-            document.getElementById('stats-summary').textContent =
-                'Could not load stats: ' + (err.message || '');
-        }
-    }
-
-
-
-
-    
-
-    document.getElementById('back-home-btn').addEventListener('click', () => {
-     window.location.href = window.location.origin + '/frontend/home.html';
-
+      tr.appendChild(tdDate);
+      tr.appendChild(tdCount);
+      tbody.appendChild(tr);
     });
-
-    const g = await api('/sessions/gallery');
-const gData = await g.json();
-renderGallery(gData.items || []);
-
-
-    loadStats();
-
-
-    function renderGallery(items) {
-  const gallery = document.getElementById('gallery');
-  gallery.innerHTML = '';
-
-  if (!items.length) {
-    gallery.textContent = 'No memories yet — add photos to your sessions ✨';
-    return;
   }
 
-  items.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'gallery-item';
+  function renderModes(modeCounts) {
+    const tbody = document.querySelector('#modes-table tbody');
+    tbody.innerHTML = '';
 
-    const img = document.createElement('img');
-    img.src = item.photo;
-    img.alt = item.activity_title;
+    Object.entries(modeCounts).forEach(([mode, count]) => {
+      const tr = document.createElement('tr');
 
-    const caption = document.createElement('p');
-    caption.textContent =
-      `${item.activity_title} • ${new Date(item.completed_at).toLocaleDateString()}`;
+      const tdMode = document.createElement('td');
+      tdMode.textContent = mode;
 
-    card.appendChild(img);
-    card.appendChild(caption);
-    gallery.appendChild(card);
-  });
-}
-document.getElementById('back-home-btn').addEventListener('click', () => {
-    window.location.href = '/frontend/home.html';
-  });
+      const tdCount = document.createElement('td');
+      tdCount.textContent = count;
 
-function renderGallery(photos) {
-  const gallery = document.getElementById('gallery');
-  gallery.innerHTML = '';
-
-  if (!photos.length) {
-    gallery.innerHTML = '<p>No memories yet ✨</p>';
-    return;
+      tr.appendChild(tdMode);
+      tr.appendChild(tdCount);
+      tbody.appendChild(tr);
+    });
   }
 
-  photos.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'gallery-item';
+  function calculateStreak(days) {
+    let streak = 0;
+    for (let i = days.length - 1; i >= 0; i--) {
+      if (days[i].count > 0) streak++;
+      else break;
+    }
+    return streak;
+  }
 
-    const img = document.createElement('img');
-    img.src = p.photo;
-    img.alt = p.activity_title || 'Memory';
+  function renderGallery(items) {
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = '';
 
-    const caption = document.createElement('p');
-    caption.textContent =
-      `${p.activity_title || ''} · ${new Date(p.completed_at).toLocaleDateString()}`;
+    if (!items || items.length === 0) {
+      gallery.textContent = 'No memories yet — add photos to your sessions ✨';
+      return;
+    }
 
-    div.appendChild(img);
-    div.appendChild(caption);
-    gallery.appendChild(div);
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'gallery-item';
+
+      const img = document.createElement('img');
+      img.src = item.photo;
+      img.alt = item.activity_title || 'Memory';
+
+      const caption = document.createElement('p');
+      caption.textContent =
+        `${item.activity_title || ''} • ${new Date(item.completed_at).toLocaleDateString()}`;
+
+      card.appendChild(img);
+      card.appendChild(caption);
+      gallery.appendChild(card);
+    });
+  }
+
+  async function loadStats() {
+    try {
+      // 1) Stats
+      const r = await api('/sessions/stats');
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load stats');
+
+      document.getElementById('stats-summary').textContent =
+        `Total completed sessions: ${data.total}`;
+
+      renderDays(data.days || []);
+      renderModes(data.modeCounts || {});
+
+      const streak = calculateStreak(data.days || []);
+      const streakEl = document.getElementById('stats-streak');
+      streakEl.textContent = (streak > 0)
+        ? `Streak: ${streak} day${streak === 1 ? '' : 's'} 🔥 Keep it going!`
+        : 'No current streak yet — start one today ✨';
+
+      // 2) Gallery
+      const gr = await api('/sessions/gallery');
+      const gdata = await gr.json();
+      renderGallery(gdata.items || []);
+
+    } catch (err) {
+      document.getElementById('stats-summary').textContent =
+        'Could not load stats: ' + (err.message || '');
+      console.error(err);
+    }
+  }
+
+  document.getElementById('back-home-btn').addEventListener('click', () => {
+    window.location.href = 'home.html';
   });
-}
 
-
-
-
-
-  </script>
-  <script>
-  document.getElementById('back-home-btn').onclick = () => {
-    sessionStorage.clear();
-    window.location.href = '/frontend/home.html';
-  };
+  loadStats();
 </script>
 
 
